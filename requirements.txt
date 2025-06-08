@@ -1,0 +1,49 @@
+# Core Framework
+python-dotenv>=1.0.0
+click>=8.1.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# Database
+SQLAlchemy>=2.0.0
+PyMySQL>=1.1.0
+alembic>=1.12.0
+
+# Web Automation (Chrome-based)
+selenium>=4.15.0
+selenium-stealth>=1.0.6
+webdriver-manager>=4.0.0
+undetected-chromedriver>=3.5.0
+
+# HTTP Requests & Proxy Management
+requests>=2.31.0
+urllib3>=2.0.0
+
+# Validation & Utilities
+phonenumbers>=8.13.0
+cryptography>=41.0.0
+
+# GUI (Optional)
+# Uncomment if using GUI interface
+# tkinter is built-in for most Python installations
+
+# Development Dependencies
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+black>=23.0.0
+isort>=5.12.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Logging & Monitoring
+structlog>=23.1.0
+rich>=13.5.0
+
+# Async Support
+asyncio>=3.4.3
+aiofiles>=23.2.0
+
+# Task Queue (Future Enhancement)
+# celery>=5.3.0
+# redis>=4.6.0

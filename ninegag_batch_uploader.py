@@ -69,10 +69,25 @@ def _save_registry(registry: Dict[str, Dict[str, object]]) -> None:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
-def register_template(name: str, path: Path, channels: List[str]) -> None:
-    """Register a video template with associated upload channels."""
+def register_template(template_dir: Path) -> None:
+    """Register a template by reading its manifest file."""
+    manifest_path = template_dir / "manifest.json"
+    if not manifest_path.exists():
+        raise FileNotFoundError(f"Manifest not found: {manifest_path}")
+
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    name = manifest.get("name", template_dir.name)
+    channels = manifest.get("channels", [])
+    steps = manifest.get("steps", [])
+
     registry = _load_registry()
-    registry[name] = {"path": str(path), "channels": channels}
+    registry[name] = {
+        "path": str(template_dir),
+        "channels": channels,
+        "steps": steps,
+    }
     _save_registry(registry)
     logger.info("Registered template '%s'", name)
 

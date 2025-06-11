@@ -104,10 +104,10 @@ def register_template(template_dir: Path) -> None:
     logger.info("Registered template '%s'", name)
 
 
-def crawl_9gag_videos(date_str: str) -> List[VideoMeta]:
+def crawl_9gag_videos(date_str: str, driver_path: Optional[str] = None) -> List[VideoMeta]:
     """Crawl 9GAG for videos on the given date."""
     target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-    crawler = NineGagCrawler(headless=True)
+    crawler = NineGagCrawler(headless=True, driver_path=driver_path)
     results: List[VideoMeta] = []
     try:
         logger.info("Crawling 9GAG for videos on %s", target_date.isoformat())
@@ -204,9 +204,13 @@ def main() -> None:
     parser = ArgumentParser(description="Batch upload 9GAG videos")
     parser.add_argument("--date", required=True, help="Date of posts YYYY-MM-DD")
     parser.add_argument("--template", required=True, help="Template name")
+    parser.add_argument(
+        "--driver-path",
+        help="Path to ChromeDriver executable (overrides CHROMEDRIVER_PATH)",
+    )
     args = parser.parse_args()
 
-    videos = crawl_9gag_videos(args.date)
+    videos = crawl_9gag_videos(args.date, driver_path=args.driver_path)
     processed: List[Path] = []
     for video in videos:
         if video.downloaded_path:

@@ -44,10 +44,11 @@ class VideoData:
 class NineGagCrawler:
     """Crawl 9GAG video posts using Selenium."""
 
-    def __init__(self, headless: bool = True) -> None:
+    def __init__(self, headless: bool = True, driver_path: Optional[str] = None) -> None:
         self.videos: List[VideoData] = []
         self.driver: Optional[webdriver.Chrome] = None
         self.headless = headless
+        self.driver_path = driver_path
         self.setup_driver()
 
     def setup_driver(self) -> None:
@@ -69,7 +70,10 @@ class NineGagCrawler:
             "Chrome/120.0.0.0 Safari/537.36"
         )
 
-        driver_path = ChromeDriverManager().install()
+        driver_path = self.driver_path or os.getenv("CHROMEDRIVER_PATH")
+        if not driver_path:
+            driver_path = ChromeDriverManager().install()
+
         chromedriver_path = (
             driver_path
             if os.name != "nt"

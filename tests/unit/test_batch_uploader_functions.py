@@ -8,7 +8,7 @@ from ninegag_batch_uploader import apply_template, crawl_9gag_videos, upload_to_
 
 
 class DummyCrawler:
-    def __init__(self, headless=True):
+    def __init__(self, headless=True, driver_path=None):
         pass
 
     def crawl_category(self, category, scroll_times=5):

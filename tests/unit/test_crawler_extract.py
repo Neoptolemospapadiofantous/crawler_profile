@@ -10,13 +10,20 @@ def load_crawler_module():
     # Stub selenium modules
     selenium = types.ModuleType("selenium")
     webdriver = types.ModuleType("selenium.webdriver")
-    webdriver.Chrome = lambda *a, **k: None
+    class DummyChrome:
+        def __init__(self, *a, **k):
+            self.service = k.get("service")
+        def execute_script(self, script):
+            pass
+    webdriver.Chrome = DummyChrome
 
     chrome_options = types.ModuleType("selenium.webdriver.chrome.options")
     class Options:
         def __init__(self):
             pass
         def add_argument(self, arg):
+            pass
+        def add_experimental_option(self, name, value):
             pass
     chrome_options.Options = Options
 
@@ -144,3 +151,44 @@ def test_extract_all_videos_detects_posts(monkeypatch):
     videos = crawler._extract_all_videos("hot")
     ids = [v.post_id for v in videos]
     assert ids == ["a1", "b2"]
+
+
+def test_init_uses_given_driver_path(monkeypatch):
+    crawler_mod = load_crawler_module()
+    recorded = {}
+
+    def fake_chrome(*args, **kwargs):
+        recorded["path"] = kwargs["service"].path
+        class D:
+            def execute_script(self, *a, **k):
+                pass
+        return D()
+
+    monkeypatch.setattr(crawler_mod.webdriver, "Chrome", fake_chrome)
+    monkeypatch.delenv("CHROMEDRIVER_PATH", raising=False)
+    crawler_mod.NineGagCrawler(driver_path="/custom/path")
+    assert recorded["path"] == "/custom/path"
+
+
+def test_init_uses_env_var(monkeypatch):
+    crawler_mod = load_crawler_module()
+    recorded = {}
+    called = {"count": 0}
+
+    def fake_install(self):
+        called["count"] += 1
+        return "/tmp/unused"
+
+    def fake_chrome(*args, **kwargs):
+        recorded["path"] = kwargs["service"].path
+        class D:
+            def execute_script(self, *a, **k):
+                pass
+        return D()
+
+    monkeypatch.setattr(crawler_mod.ChromeDriverManager, "install", fake_install)
+    monkeypatch.setattr(crawler_mod.webdriver, "Chrome", fake_chrome)
+    monkeypatch.setenv("CHROMEDRIVER_PATH", "/env/path")
+    crawler_mod.NineGagCrawler()
+    assert recorded["path"] == "/env/path"
+    assert called["count"] == 0

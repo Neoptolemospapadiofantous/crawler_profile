@@ -35,6 +35,7 @@ class VideoData:
     author: str
     tags: List[str]
     stats: Dict[str, int]
+    published: Optional[datetime] = None
     duration: Optional[str] = None
     category: str = ""
     extracted_at: datetime = field(default_factory=datetime.now)
@@ -70,12 +71,16 @@ class NineGagCrawler:
 
         driver_path = ChromeDriverManager().install()
         chromedriver_path = (
-            driver_path if os.name != "nt" else os.path.join(os.path.dirname(driver_path), "chromedriver.exe")
+            driver_path
+            if os.name != "nt"
+            else os.path.join(os.path.dirname(driver_path), "chromedriver.exe")
         )
         service = Service(chromedriver_path)
 
         self.driver = webdriver.Chrome(service=service, options=chrome_options)
-        self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        self.driver.execute_script(
+            "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+        )
         logger.info("Chrome driver initialized successfully")
 
     def crawl_category(self, category: str, scroll_times: int = 3) -> List[VideoData]:
@@ -88,14 +93,18 @@ class NineGagCrawler:
         time.sleep(3)
 
         try:
-            cookie_button = self.driver.find_element(By.CSS_SELECTOR, '[data-testid="cookie-banner-accept"]')
+            cookie_button = self.driver.find_element(
+                By.CSS_SELECTOR, '[data-testid="cookie-banner-accept"]'
+            )
             cookie_button.click()
             time.sleep(1)
         except Exception:
             pass
 
         for _ in range(scroll_times):
-            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            self.driver.execute_script(
+                "window.scrollTo(0, document.body.scrollHeight);"
+            )
             time.sleep(2)
 
         return self._extract_all_videos(category)
@@ -104,13 +113,17 @@ class NineGagCrawler:
         videos: List[VideoData] = []
         try:
             WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, 'article[id^="jsid-post-"]'))
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, 'article[id^="jsid-post-"]')
+                )
             )
         except TimeoutException:
             logger.error("Page failed to load articles within timeout")
             return videos
 
-        articles = self.driver.find_elements(By.CSS_SELECTOR, 'article[id^="jsid-post-"]')
+        articles = self.driver.find_elements(
+            By.CSS_SELECTOR, 'article[id^="jsid-post-"]'
+        )
 
         for article in articles:
             video_data = self._extract_video_from_article(article, category)
@@ -120,7 +133,9 @@ class NineGagCrawler:
         logger.info("Found %d videos", len(videos))
         return videos
 
-    def _extract_video_from_article(self, article, category: str) -> Optional[VideoData]:
+    def _extract_video_from_article(
+        self, article, category: str
+    ) -> Optional[VideoData]:
         try:
             post_id = article.get_attribute("id").replace("jsid-post-", "")
             if not post_id:
@@ -168,13 +183,19 @@ class NineGagCrawler:
 
             if not video_url:
                 video_url = f"https://img-9gag-fun.9cache.com/photo/{post_id}_460sv.mp4"
-                mobile_url = f"https://img-9gag-fun.9cache.com/photo/{post_id}_460svav1.mp4"
+                mobile_url = (
+                    f"https://img-9gag-fun.9cache.com/photo/{post_id}_460svav1.mp4"
+                )
                 if not thumbnail:
-                    thumbnail = f"https://img-9gag-fun.9cache.com/photo/{post_id}_460s.jpg"
+                    thumbnail = (
+                        f"https://img-9gag-fun.9cache.com/photo/{post_id}_460s.jpg"
+                    )
 
             author = "Unknown"
             try:
-                author_elem = article.find_element(By.CSS_SELECTOR, ".ui-post-creator__author")
+                author_elem = article.find_element(
+                    By.CSS_SELECTOR, ".ui-post-creator__author"
+                )
                 if author_elem:
                     author = author_elem.text
             except Exception:
@@ -200,6 +221,27 @@ class NineGagCrawler:
             except Exception:
                 pass
 
+            published = None
+            try:
+                time_elem = article.find_element(By.TAG_NAME, "time")
+                if time_elem:
+                    dt = (
+                        time_elem.get_attribute("datetime")
+                        or time_elem.get_attribute("content")
+                        or time_elem.get_attribute("title")
+                        or time_elem.text
+                    )
+                    published = self._parse_date(dt)
+            except Exception:
+                try:
+                    meta_elem = article.find_element(
+                        By.CSS_SELECTOR, "meta[itemprop='uploadDate']"
+                    )
+                    if meta_elem:
+                        published = self._parse_date(meta_elem.get_attribute("content"))
+                except Exception:
+                    pass
+
             return VideoData(
                 post_id=post_id,
                 title=title,
@@ -209,6 +251,7 @@ class NineGagCrawler:
                 author=author,
                 tags=tags,
                 stats=stats,
+                published=published,
                 duration=duration,
                 category=category,
             )
@@ -225,17 +268,25 @@ class NineGagCrawler:
                     stats["upvotes"] = self._parse_number(upvote_elem.text)
             except Exception:
                 try:
-                    upvote_container = article.find_element(By.CSS_SELECTOR, ".btn-vote")
+                    upvote_container = article.find_element(
+                        By.CSS_SELECTOR, ".btn-vote"
+                    )
                     spans = upvote_container.find_elements(By.TAG_NAME, "span")
                     for span in spans:
-                        if span.text and span.text.strip() and "comment" not in span.text.lower():
+                        if (
+                            span.text
+                            and span.text.strip()
+                            and "comment" not in span.text.lower()
+                        ):
                             stats["upvotes"] = self._parse_number(span.text)
                             break
                 except Exception:
                     pass
 
             try:
-                comment_elem = article.find_element(By.CSS_SELECTOR, "a.comment span:first-child")
+                comment_elem = article.find_element(
+                    By.CSS_SELECTOR, "a.comment span:first-child"
+                )
                 if comment_elem and comment_elem.text:
                     stats["comments"] = self._parse_number(comment_elem.text)
             except Exception:
@@ -244,7 +295,9 @@ class NineGagCrawler:
                     spans = comment_link.find_elements(By.TAG_NAME, "span")
                     for span in spans:
                         text = span.text.strip()
-                        if text and (text.isdigit() or "k" in text.lower() or "m" in text.lower()):
+                        if text and (
+                            text.isdigit() or "k" in text.lower() or "m" in text.lower()
+                        ):
                             stats["comments"] = self._parse_number(text)
                             break
                 except Exception:
@@ -276,8 +329,22 @@ class NineGagCrawler:
         except (ValueError, AttributeError):
             return 0
 
+    def _parse_date(self, date_str: str) -> Optional[datetime]:
+        """Parse a date string into a datetime object if possible."""
+        if not date_str:
+            return None
+        date_str = date_str.strip()
+        try:
+            return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+        except ValueError:
+            for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+                try:
+                    return datetime.strptime(date_str, fmt)
+                except ValueError:
+                    continue
+        return None
+
     def close(self) -> None:
         if self.driver:
             self.driver.quit()
             logger.info("Driver closed")
-

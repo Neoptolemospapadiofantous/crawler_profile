@@ -25,6 +25,7 @@ urllib3>=2.0.0
 # Validation & Utilities
 phonenumbers>=8.13.0
 cryptography>=41.0.0
+PyYAML>=6.0
 
 # GUI (Optional)
 # Uncomment if using GUI interface

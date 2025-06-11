@@ -36,13 +36,18 @@ A modular, secure, and scalable system for automated profile management and web-
    pip install -r requirements.txt
    ```
 
-4. **Setup configuration**
+4. **Install in editable mode**
+   ```bash
+   pip install -e .
+   ```
+
+5. **Setup configuration**
    ```bash
    cp .env.example .env
    # Edit .env with your configuration
    ```
 
-5. **Initialize database**
+6. **Initialize database**
    ```bash
    python scripts/migrate.py
    ```
@@ -50,14 +55,16 @@ A modular, secure, and scalable system for automated profile management and web-
 ## 🎯 Quick Start
 
 ```bash
-# Start the application
-python -m src.main
-
 # Create a profile
-python -m src.cli create-profile --username testuser
+pa-cli profile create --username testuser
 
 # Run automation tasks
-python -m src.cli execute-task --profile-id 1 --task youtube-channel
+pa-cli task execute --profile-id 1 --task-type youtube-channel
+
+# Generate videos
+pa-cli video create --category cats
+
+# If the package isn't installed, replace `pa-cli` with `python -m src.cli`
 ```
 
 ## 📁 Project Structure

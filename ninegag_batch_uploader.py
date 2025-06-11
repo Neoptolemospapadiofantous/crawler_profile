@@ -115,8 +115,13 @@ def crawl_9gag_videos(date_str: str, driver_path: Optional[str] = None) -> List[
         download_dir = Path("downloads") / date_str
         download_dir.mkdir(parents=True, exist_ok=True)
         for video in videos:
-            if not video.published or video.published.date() != target_date:
-                continue
+            if video.published:
+                if video.published.date() != target_date:
+                    continue
+            else:
+                logger.warning(
+                    "Video %s has no published date; including anyway", video.post_id
+                )
             video_path = download_dir / f"{video.post_id}.mp4"
             if not video_path.exists():
                 try:

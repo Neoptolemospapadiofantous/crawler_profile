@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import logging
+from core.logging import get_logger
 import random
 import time
 from datetime import datetime
@@ -16,7 +16,7 @@ import openai
 from .crawler import VideoData
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class AIContentGenerator:

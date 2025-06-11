@@ -1,0 +1,6 @@
+ChannelA:
+  profile: /path/to/channelA/profile
+  upload_url: https://youtube.com/upload
+ChannelB:
+  profile: /path/to/channelB/profile
+  upload_url: https://youtube.com/upload

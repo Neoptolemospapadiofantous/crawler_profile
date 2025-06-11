@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     # Security settings
     secret_key: str = Field(default="", description="Application secret key")
     encryption_key: str = Field(default="", description="Fernet encryption key")
+    openai_api_key: Optional[str] = Field(default=None, description="OpenAI API key")
     
     # Proxy settings
     proxy_enabled: bool = Field(default=False, description="Enable proxy usage")

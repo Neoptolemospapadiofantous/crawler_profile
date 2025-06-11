@@ -145,6 +145,41 @@ def list_tasks(ctx, status, profile_id):
     click.echo("⏳ Task listing will be implemented in Phase 5")
 
 
+# Video Creation Commands
+@main.group()
+def video() -> None:
+    """Video creation utilities."""
+    pass
+
+
+@video.command()
+@click.option('--category', default='cats', help='9GAG category to crawl')
+@click.option('--count', type=int, default=5, help='Number of videos to process')
+@click.option('--api-key', help='OpenAI API key (overrides config)')
+@click.pass_context
+def create(ctx, category, count, api_key):
+    """Create templated videos from 9GAG."""
+    logger = ctx.obj['logger']
+    settings = get_settings()
+    key = api_key or settings.openai_api_key
+    if not key:
+        click.echo("❌ OpenAI API key not provided")
+        return
+    from ninegag import NineGagVideoCreator
+    import asyncio
+
+    creator = NineGagVideoCreator(key)
+
+    async def _run():
+        await creator.create_daily_content(category, count)
+
+    try:
+        asyncio.run(_run())
+        click.echo("✅ Video creation completed")
+    finally:
+        creator.cleanup()
+
+
 # Configuration Commands
 @main.group()
 def config():

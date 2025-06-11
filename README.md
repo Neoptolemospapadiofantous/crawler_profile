@@ -93,6 +93,16 @@ See [Configuration Guide](docs/user-guide/configuration.md) for detailed setup i
 - [API Reference](docs/api/README.md)
 - [Development Guide](docs/development/README.md)
 
+## 🧪 Testing
+
+Run the Phase 1 test suite to confirm your environment and project setup:
+
+```bash
+./test-phase1.sh
+```
+
+The script validates that required tools are available and the repository is properly configured.
+
 ## 🤝 Contributing
 
 1. Fork the repository

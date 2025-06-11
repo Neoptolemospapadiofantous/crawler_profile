@@ -61,7 +61,15 @@ class LoggerManager:
             # Update log file paths
             for handler in config.get('handlers', {}).values():
                 if 'filename' in handler:
-                    handler['filename'] = str(self.settings.log_dir / handler['filename'])
+                    file_path = Path(handler['filename'])
+                    if not file_path.is_absolute():
+                        try:
+                            file_path = file_path.relative_to(self.settings.log_dir)
+                        except ValueError:
+                            pass
+                        handler['filename'] = str(self.settings.log_dir / file_path)
+                    else:
+                        handler['filename'] = str(file_path)
                     
             logging.config.dictConfig(config)
         except Exception as e:

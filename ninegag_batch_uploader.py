@@ -221,6 +221,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    logger.info("Launching ninegag_batch_uploader script")
     try:
         main()
     except Exception as exc:

@@ -20,3 +20,5 @@ def test_register_template_reads_manifest(tmp_path, monkeypatch):
     assert "FunnyIntro" in data
     assert data["FunnyIntro"]["channels"] == ["ChannelA"]
     assert data["FunnyIntro"]["steps"] == []
+    expected_asset = str(Path("templates/FunnyIntro") / "asset.txt")
+    assert data["FunnyIntro"]["asset"] == expected_asset

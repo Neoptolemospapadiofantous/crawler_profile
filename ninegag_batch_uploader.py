@@ -81,6 +81,7 @@ def register_template(template_dir: Path) -> None:
     name = manifest.get("name", template_dir.name)
     channels = manifest.get("channels", [])
     steps = manifest.get("steps", [])
+    asset = manifest.get("asset")
 
     registry = _load_registry()
     registry[name] = {
@@ -88,6 +89,8 @@ def register_template(template_dir: Path) -> None:
         "channels": channels,
         "steps": steps,
     }
+    if asset:
+        registry[name]["asset"] = str(template_dir / asset)
     _save_registry(registry)
     logger.info("Registered template '%s'", name)
 
@@ -124,7 +127,9 @@ def apply_template(video_path: Path, template_name: str) -> Path:
     registry = _load_registry()
     if template_name not in registry:
         raise ValueError(f"Template '{template_name}' not registered")
-    template_path = Path(registry[template_name]["path"])
+    template_info = registry[template_name]
+    template_path = Path(template_info["path"])
+    asset_path = Path(template_info.get("asset", template_path))
     output = video_path.with_name(f"{video_path.stem}_{template_name}.mp4")
     cmd = [
         "ffmpeg",
@@ -132,7 +137,7 @@ def apply_template(video_path: Path, template_name: str) -> Path:
         "-i",
         str(video_path),
         "-i",
-        str(template_path),
+        str(asset_path),
         "-filter_complex",
         "[0:v][1:v] overlay=0:0",
         "-c:a",

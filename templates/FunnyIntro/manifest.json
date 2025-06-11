@@ -1,5 +1,6 @@
 {
   "name": "FunnyIntro",
   "channels": ["ChannelA"],
-  "steps": []
+  "steps": [],
+  "asset": "asset.txt"
 }

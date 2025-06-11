@@ -48,10 +48,6 @@ A modular, secure, and scalable system for automated profile management and web-
    # Edit .env with your configuration
    ```
 
-6. **Initialize database**
-   ```bash
-   python scripts/migrate.py
-   ```
 
 ## 🎯 Quick Start
 

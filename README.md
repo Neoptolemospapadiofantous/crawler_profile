@@ -16,6 +16,7 @@ A modular, secure, and scalable system for automated profile management and web-
 - MySQL 8.0+
 - Google Chrome Browser
 - ChromeDriver (or other Selenium driver)
+- Optionally set `CHROMEDRIVER_PATH` or pass `--driver-path` to specify the driver location
 - ffmpeg
 
 ## 🛠️ Installation
@@ -117,6 +118,8 @@ python ninegag_batch_uploader.py --date 2025-06-11 --template FunnyIntro
   `channels.yml` exists and points to a valid browser profile.
 - **ffmpeg errors** – ensure `ffmpeg` is installed and available on your
   `PATH`. Run `ffmpeg -version` to confirm.
+- **Missing ChromeDriver** – set the `CHROMEDRIVER_PATH` environment variable or pass
+  `--driver-path` to point to your local driver binary.
 
 ## 📁 Project Structure
 

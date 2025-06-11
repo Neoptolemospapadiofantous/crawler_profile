@@ -90,6 +90,12 @@ class NineGagCrawler:
     def crawl_category(self, category: str, scroll_times: int = 3) -> List[VideoData]:
         """Return a list of videos from a 9GAG category."""
 
+        logger.debug(
+            "Starting crawl_category for %s with scroll_times=%d",
+            category,
+            scroll_times,
+        )
+
         url = f"https://9gag.com/interest/{category}"
         logger.info("Crawling %s", url)
 
@@ -111,7 +117,13 @@ class NineGagCrawler:
             )
             time.sleep(2)
 
-        return self._extract_all_videos(category)
+        videos = self._extract_all_videos(category)
+        logger.debug(
+            "Finished crawl_category for %s, found %d videos",
+            category,
+            len(videos),
+        )
+        return videos
 
     def _extract_all_videos(self, category: str) -> List[VideoData]:
         videos: List[VideoData] = []

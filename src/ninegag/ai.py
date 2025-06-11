@@ -160,12 +160,20 @@ class AIContentGenerator:
             return {"analysis": "Analysis failed", "error": str(exc)}
 
     async def _get_ai_response(self, prompt: str, temperature: float = 0.8, max_tokens: int = 100) -> str:
+        logger.debug(
+            "Starting _get_ai_response temp=%s max_tokens=%s prompt='%s'",
+            temperature,
+            max_tokens,
+            prompt[:50].replace("\n", " "),
+        )
+
         cache_key = hashlib.md5(f"{prompt}{temperature}{max_tokens}".encode()).hexdigest()
         cache_file = self.cache_dir / f"{cache_key}.txt"
         use_cache = "Generate" not in prompt
         if use_cache and cache_file.exists():
             age = time.time() - cache_file.stat().st_mtime
             if age < 3600:
+                logger.debug("Using cached AI response for key %s", cache_key)
                 return cache_file.read_text()
         for attempt in range(3):  # pragma: no cover - external service
             try:
@@ -181,6 +189,11 @@ class AIContentGenerator:
                 result = response.choices[0].message.content
                 if use_cache:
                     cache_file.write_text(result)
+                logger.debug(
+                    "Received AI response of %d chars for key %s",
+                    len(result),
+                    cache_key,
+                )
                 return result
             except openai.RateLimitError:
                 if attempt < 2:
@@ -195,5 +208,9 @@ class AIContentGenerator:
                     await asyncio.sleep(5)
                 else:
                     raise
+        logger.debug(
+            "Failed to get AI response after retries for key %s",
+            cache_key,
+        )
         raise RuntimeError("Failed to get AI response after 3 attempts")
 

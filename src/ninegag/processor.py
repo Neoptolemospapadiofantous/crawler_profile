@@ -54,6 +54,11 @@ class VideoProcessor:
         subtitle: str,
         template: str = "modern",
     ) -> Optional[Path]:
+        logger.debug(
+            "Starting create_templated_video for %s with template %s",
+            video_data.post_id,
+            template,
+        )
         output_dir = self.output_dir / "templated" / video_data.category
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / f"{video_data.post_id}_{template}.mp4"
@@ -101,14 +106,32 @@ class VideoProcessor:
             str(output_path),
         ]
         try:
+            logger.debug(
+                "Running ffmpeg for %s: %s",
+                video_data.post_id,
+                " ".join(cmd),
+            )
             result = subprocess.run(cmd, capture_output=True, text=True)
             if result.returncode == 0:
                 logger.info("Created templated video: %s", output_path.name)
+                logger.debug(
+                    "Finished create_templated_video for %s -> %s",
+                    video_data.post_id,
+                    output_path.name,
+                )
                 return output_path
             logger.error("FFmpeg error: %s", result.stderr)
+            logger.debug(
+                "FFmpeg failed for %s with return code %s",
+                video_data.post_id,
+                result.returncode,
+            )
             return None
         except Exception as exc:  # pragma: no cover - ffmpeg dependent
             logger.error("Failed to create video: %s", exc)
+            logger.debug(
+                "Exception in create_templated_video for %s", video_data.post_id
+            )
             return None
 
     def _escape_text(self, text: str) -> str:

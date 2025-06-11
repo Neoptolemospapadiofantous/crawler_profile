@@ -9,6 +9,8 @@ from typing import Optional
 
 import requests
 
+DEFAULT_REQUEST_TIMEOUT = 10
+
 from .crawler import VideoData
 
 
@@ -18,9 +20,10 @@ logger = logging.getLogger(__name__)
 class VideoProcessor:
     """Download videos and render templates using FFmpeg."""
 
-    def __init__(self) -> None:
+    def __init__(self, request_timeout: int | float = DEFAULT_REQUEST_TIMEOUT) -> None:
         self.output_dir = Path("./output")
         self.output_dir.mkdir(exist_ok=True)
+        self.request_timeout = request_timeout
 
     def download_video(self, video: VideoData) -> Optional[Path]:
         download_dir = self.output_dir / "downloads" / video.category
@@ -30,7 +33,9 @@ class VideoProcessor:
             logger.info("Video already downloaded: %s", video.post_id)
             return filepath
         try:
-            response = requests.get(video.mobile_url, stream=True)
+            response = requests.get(
+                video.mobile_url, stream=True, timeout=self.request_timeout
+            )
             response.raise_for_status()
             with open(filepath, "wb") as f:
                 for chunk in response.iter_content(chunk_size=8192):

@@ -12,10 +12,11 @@ A modular, secure, and scalable system for automated profile management and web-
 
 ## 📋 Prerequisites
 
-- Python 3.8+
+- Python 3.9+
 - MySQL 8.0+
 - Google Chrome Browser
-- ChromeDriver
+- ChromeDriver (or other Selenium driver)
+- ffmpeg
 
 ## 🛠️ Installation
 
@@ -66,6 +67,50 @@ pa-cli video create --category cats
 
 # If the package isn't installed, replace `pa-cli` with `python -m src.cli`
 ```
+
+## 9GAG Batch Uploader
+
+The script `ninegag_batch_uploader.py` downloads videos from 9GAG,
+applies a template with `ffmpeg` and then uploads the result using
+Selenium.
+
+### Populating `templates/`
+
+Create a directory under `templates/` for each template. It must contain
+a `manifest.json` file and any asset files. A minimal manifest looks
+like:
+
+```json
+{
+  "name": "FunnyIntro",
+  "channels": ["ChannelA"],
+  "steps": []
+}
+```
+
+### Editing `channels.yml`
+
+`channels.yml` associates a channel name with a browser profile path and
+the upload page. Example:
+
+```yaml
+ChannelA:
+  profile: /path/to/channelA/profile
+  upload_url: https://youtube.com/upload
+```
+
+### Example Invocation
+
+```bash
+python ninegag_batch_uploader.py --date 2025-06-11 --template FunnyIntro
+```
+
+### Troubleshooting
+
+- **Missing Chrome profile** – verify that the path configured in
+  `channels.yml` exists and points to a valid browser profile.
+- **ffmpeg errors** – ensure `ffmpeg` is installed and available on your
+  `PATH`. Run `ffmpeg -version` to confirm.
 
 ## 📁 Project Structure
 

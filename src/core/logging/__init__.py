@@ -1,126 +1,189 @@
 """
-Centralized logging configuration and management.
+Logging configuration module.
+Provides structured logging with JSON and text formats.
 """
-
+import os
+import sys
 import logging
 import logging.config
-import yaml
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
+import yaml
 import structlog
+from structlog.stdlib import LoggerFactory
+
 from config.settings import get_settings
+
+# Module-level logger storage
+_loggers: Dict[str, logging.Logger] = {}
+_logger_manager: Optional['LoggerManager'] = None
 
 
 class LoggerManager:
-    """Centralized logger management for the application."""
+    """Manages application-wide logging configuration."""
     
-    _initialized = False
-    _loggers = {}
-    
-    @classmethod
-    def initialize(cls, config_path: Optional[Path] = None) -> None:
-        """Initialize the logging system."""
-        if cls._initialized:
+    def __init__(self, config_path: Optional[Path] = None):
+        """
+        Initialize logger manager.
+        
+        Args:
+            config_path: Path to logging configuration file
+        """
+        self.settings = get_settings()
+        self.config_path = config_path or Path("config/logging.yaml")
+        self._initialized = False
+        
+    def initialize(self):
+        """Initialize logging configuration."""
+        if self._initialized:
             return
+            
+        # Create log directory
+        self.settings.log_dir.mkdir(parents=True, exist_ok=True)
         
-        settings = get_settings()
-        
-        # Ensure log directory exists
-        settings.logging.dir.mkdir(parents=True, exist_ok=True)
-        
-        # Load logging configuration
-        if config_path is None:
-            config_path = Path("config/logging.yaml")
-        
-        if config_path.exists():
-            with open(config_path, 'r') as f:
-                config = yaml.safe_load(f)
-            logging.config.dictConfig(config)
+        # Load configuration
+        if self.config_path.exists():
+            self._load_yaml_config()
         else:
-            # Fallback to basic configuration
-            cls._setup_basic_logging()
-        
+            self._load_default_config()
+            
         # Configure structlog
+        self._configure_structlog()
+        
+        self._initialized = True
+        
+    def _load_yaml_config(self):
+        """Load logging configuration from YAML file."""
+        try:
+            with open(self.config_path, 'r') as f:
+                config = yaml.safe_load(f)
+                
+            # Update log file paths
+            for handler in config.get('handlers', {}).values():
+                if 'filename' in handler:
+                    handler['filename'] = str(self.settings.log_dir / handler['filename'])
+                    
+            logging.config.dictConfig(config)
+        except Exception as e:
+            print(f"Failed to load logging config: {e}", file=sys.stderr)
+            self._load_default_config()
+            
+    def _load_default_config(self):
+        """Load default logging configuration."""
+        config = {
+            'version': 1,
+            'disable_existing_loggers': False,
+            'formatters': {
+                'standard': {
+                    'format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+                },
+                'json': {
+                    'format': '%(message)s'
+                }
+            },
+            'handlers': {
+                'console': {
+                    'class': 'logging.StreamHandler',
+                    'level': self.settings.log_level,
+                    'formatter': 'standard',
+                    'stream': 'ext://sys.stdout'
+                },
+                'file': {
+                    'class': 'logging.handlers.RotatingFileHandler',
+                    'level': self.settings.log_level,
+                    'formatter': 'json' if self.settings.log_format == 'json' else 'standard',
+                    'filename': str(self.settings.log_dir / 'app.log'),
+                    'maxBytes': 10485760,  # 10MB
+                    'backupCount': 5
+                }
+            },
+            'root': {
+                'level': self.settings.log_level,
+                'handlers': ['console', 'file']
+            }
+        }
+        
+        logging.config.dictConfig(config)
+        
+    def _configure_structlog(self):
+        """Configure structlog for structured logging."""
+        processors = [
+            structlog.stdlib.filter_by_level,
+            structlog.stdlib.add_logger_name,
+            structlog.stdlib.add_log_level,
+            structlog.stdlib.PositionalArgumentsFormatter(),
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.StackInfoRenderer(),
+            structlog.processors.format_exc_info,
+        ]
+        
+        if self.settings.log_format == "json":
+            processors.append(structlog.processors.JSONRenderer())
+        else:
+            processors.append(structlog.dev.ConsoleRenderer())
+            
         structlog.configure(
-            processors=[
-                structlog.stdlib.filter_by_level,
-                structlog.stdlib.add_logger_name,
-                structlog.stdlib.add_log_level,
-                structlog.stdlib.PositionalArgumentsFormatter(),
-                structlog.processors.TimeStamper(fmt="iso"),
-                structlog.processors.StackInfoRenderer(),
-                structlog.processors.format_exc_info,
-                structlog.processors.UnicodeDecoder(),
-                structlog.processors.JSONRenderer()
-            ],
+            processors=processors,
             context_class=dict,
-            logger_factory=structlog.stdlib.LoggerFactory(),
+            logger_factory=LoggerFactory(),
             cache_logger_on_first_use=True,
         )
         
-        cls._initialized = True
+    def get_logger(self, name: str) -> logging.Logger:
+        """
+        Get a logger instance.
+        
+        Args:
+            name: Logger name (usually __name__)
+            
+        Returns:
+            Logger instance
+        """
+        if not self._initialized:
+            self.initialize()
+            
+        if name not in _loggers:
+            _loggers[name] = structlog.get_logger(name)
+            
+        return _loggers[name]
+
+
+def get_logger_manager() -> LoggerManager:
+    """Get the global logger manager instance."""
+    global _logger_manager
     
-    @classmethod
-    def _setup_basic_logging(cls) -> None:
-        """Setup basic logging configuration as fallback."""
-        settings = get_settings()
+    if _logger_manager is None:
+        _logger_manager = LoggerManager()
+        _logger_manager.initialize()
         
-        logging.basicConfig(
-            level=getattr(logging, settings.logging.level),
-            format=settings.logging.format,
-            handlers=[
-                logging.StreamHandler(),
-                logging.FileHandler(settings.logging.dir / "app.log")
-            ]
-        )
+    return _logger_manager
+
+
+def get_logger(name: str) -> logging.Logger:
+    """
+    Get a logger instance.
     
-    @classmethod
-    def get_logger(cls, name: str) -> structlog.stdlib.BoundLogger:
-        """Get a logger instance with the given name."""
-        if not cls._initialized:
-            cls.initialize()
+    Args:
+        name: Logger name (usually __name__)
         
-        if name not in cls._loggers:
-            # Create a structured logger
-            logger = structlog.get_logger(f"profile_automation.{name}")
-            cls._loggers[name] = logger
-        
-        return cls._loggers[name]
-    
-    @classmethod
-    def get_standard_logger(cls, name: str) -> logging.Logger:
-        """Get a standard Python logger instance."""
-        if not cls._initialized:
-            cls.initialize()
-        
-        return logging.getLogger(f"profile_automation.{name}")
+    Returns:
+        Logger instance
+    """
+    manager = get_logger_manager()
+    return manager.get_logger(name)
 
 
-# Convenience functions for common loggers
-def get_profile_logger() -> structlog.stdlib.BoundLogger:
-    """Get the profiles logger."""
-    return LoggerManager.get_logger("profiles")
-
-
-def get_database_logger() -> structlog.stdlib.BoundLogger:
-    """Get the database logger."""
-    return LoggerManager.get_logger("database")
-
-
-def get_task_logger() -> structlog.stdlib.BoundLogger:
-    """Get the tasks logger."""
-    return LoggerManager.get_logger("tasks")
-
-
-def get_automation_logger() -> structlog.stdlib.BoundLogger:
-    """Get the automation logger."""
-    return LoggerManager.get_logger("automation")
-
-
-def get_main_logger() -> structlog.stdlib.BoundLogger:
+def get_main_logger() -> logging.Logger:
     """Get the main application logger."""
-    return LoggerManager.get_logger("main")
+    return get_logger("main")
 
 
 # Initialize logging on import
-LoggerManager.initialize()
+get_logger_manager()
+
+__all__ = [
+    'LoggerManager',
+    'get_logger_manager',
+    'get_logger',
+    'get_main_logger',
+]                                                                               

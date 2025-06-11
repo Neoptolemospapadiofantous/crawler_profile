@@ -118,7 +118,7 @@ class NineGagCrawler:
         selectors = ["article[data-entry-id]", 'article[id^="jsid-post-"]']
 
         try:
-            WebDriverWait(self.driver, 10).until(
+            WebDriverWait(self.driver, 30).until(
                 lambda d: any(
                     d.find_elements(By.CSS_SELECTOR, sel) for sel in selectors
                 )
@@ -130,6 +130,23 @@ class NineGagCrawler:
         articles = []
         for sel in selectors:
             articles.extend(self.driver.find_elements(By.CSS_SELECTOR, sel))
+
+        if not articles and hasattr(self.driver, "execute_script"):
+            logger.warning("No articles found, retrying scroll")
+            for _ in range(2):
+                try:
+                    self.driver.execute_script(
+                        "window.scrollTo(0, document.body.scrollHeight);"
+                    )
+                except Exception:
+                    break
+                time.sleep(2)
+                for sel in selectors:
+                    articles.extend(
+                        self.driver.find_elements(By.CSS_SELECTOR, sel)
+                    )
+                if articles:
+                    break
 
         seen: set[str] = set()
         unique_articles = []

@@ -35,12 +35,17 @@ LOG_DIR = Path("logs")
 LOG_DIR.mkdir(exist_ok=True)
 logger = logging.getLogger("ninegag_batch_uploader")
 logger.setLevel(logging.INFO)
-file_handler = logging.FileHandler(LOG_DIR / f"batch_uploader_{datetime.now().date()}.log")
-file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+file_handler = logging.FileHandler(
+    LOG_DIR / f"batch_uploader_{datetime.now().date()}.log"
+)
+file_handler.setFormatter(
+    logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+)
 logger.addHandler(file_handler)
 console = logging.StreamHandler()
 console.setFormatter(logging.Formatter("%(levelname)s - %(message)s"))
 logger.addHandler(console)
+
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -53,8 +58,10 @@ class VideoMeta:
     title: str
     downloaded_path: Optional[Path] = None
 
+
 # Template registry stored in JSON
 REGISTRY_PATH = Path("templates_registry.json")
+
 
 def _load_registry() -> Dict[str, Dict[str, object]]:
     if REGISTRY_PATH.exists():
@@ -62,9 +69,11 @@ def _load_registry() -> Dict[str, Dict[str, object]]:
             return json.load(f)
     return {}
 
+
 def _save_registry(registry: Dict[str, Dict[str, object]]) -> None:
     with open(REGISTRY_PATH, "w", encoding="utf-8") as f:
         json.dump(registry, f, indent=2)
+
 
 # ---------------------------------------------------------------------------
 # Public API
@@ -94,6 +103,7 @@ def register_template(template_dir: Path) -> None:
     _save_registry(registry)
     logger.info("Registered template '%s'", name)
 
+
 def crawl_9gag_videos(date_str: str) -> List[VideoMeta]:
     """Crawl 9GAG for videos on the given date."""
     target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
@@ -105,6 +115,8 @@ def crawl_9gag_videos(date_str: str) -> List[VideoMeta]:
         download_dir = Path("downloads") / date_str
         download_dir.mkdir(parents=True, exist_ok=True)
         for video in videos:
+            if not video.published or video.published.date() != target_date:
+                continue
             video_path = download_dir / f"{video.post_id}.mp4"
             if not video_path.exists():
                 try:
@@ -116,11 +128,16 @@ def crawl_9gag_videos(date_str: str) -> List[VideoMeta]:
                 except Exception as exc:  # pragma: no cover - network dependent
                     logger.error("Failed downloading %s: %s", video.mobile_url, exc)
                     continue
-            results.append(VideoMeta(url=video.mobile_url, title=video.title, downloaded_path=video_path))
+            results.append(
+                VideoMeta(
+                    url=video.mobile_url, title=video.title, downloaded_path=video_path
+                )
+            )
     finally:
         crawler.close()
     logger.info("Found %d videos", len(results))
     return results
+
 
 def apply_template(video_path: Path, template_name: str) -> Path:
     """Render the specified template onto a video."""
@@ -152,6 +169,7 @@ def apply_template(video_path: Path, template_name: str) -> Path:
         raise
     return output
 
+
 def upload_to_channel(processed_videos: List[Path], channel_name: str) -> None:
     """Upload processed videos using a Selenium profile."""
     config_path = Path("channels.yml")
@@ -178,6 +196,7 @@ def upload_to_channel(processed_videos: List[Path], channel_name: str) -> None:
         driver.quit()
         logger.info("Upload session finished for %s", channel_name)
 
+
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
@@ -200,6 +219,7 @@ def main() -> None:
     channels = template_info.get("channels", [])
     for channel in channels:
         upload_to_channel(processed, channel)
+
 
 if __name__ == "__main__":
     main()

@@ -1,5 +1,6 @@
 from pathlib import Path
 import types
+from datetime import datetime
 
 import pytest
 
@@ -23,8 +24,21 @@ class DummyCrawler:
                 author="tester",
                 tags=[],
                 stats={"upvotes": 1, "comments": 0},
+                published=datetime(2023, 1, 1, 12, 0, 0),
                 category=category,
-            )
+            ),
+            VideoData(
+                post_id="xyz",
+                title="Other",
+                video_url="http://example.com/video2.mp4",
+                mobile_url="http://example.com/video2.mp4",
+                thumbnail_url="",
+                author="tester",
+                tags=[],
+                stats={"upvotes": 1, "comments": 0},
+                published=datetime(2023, 1, 2, 12, 0, 0),
+                category=category,
+            ),
         ]
 
     def close(self):
@@ -42,14 +56,18 @@ class DummyResp:
 def test_crawl_9gag_videos_downloads_to_path(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr("ninegag_batch_uploader.NineGagCrawler", DummyCrawler)
-    monkeypatch.setattr("ninegag_batch_uploader.requests.get", lambda *a, **k: DummyResp())
+    monkeypatch.setattr(
+        "ninegag_batch_uploader.requests.get", lambda *a, **k: DummyResp()
+    )
 
     results = crawl_9gag_videos("2023-01-01")
 
     expected = tmp_path / "downloads" / "2023-01-01" / "abc.mp4"
+    skipped = tmp_path / "downloads" / "2023-01-01" / "xyz.mp4"
     assert len(results) == 1
     assert results[0].downloaded_path.resolve() == expected.resolve()
     assert expected.exists()
+    assert not skipped.exists()
 
 
 def test_apply_template_returns_output_path(tmp_path, monkeypatch):

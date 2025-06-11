@@ -111,19 +111,35 @@ class NineGagCrawler:
 
     def _extract_all_videos(self, category: str) -> List[VideoData]:
         videos: List[VideoData] = []
+        selectors = ["article[data-entry-id]", 'article[id^="jsid-post-"]']
+
         try:
             WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located(
-                    (By.CSS_SELECTOR, 'article[id^="jsid-post-"]')
+                lambda d: any(
+                    d.find_elements(By.CSS_SELECTOR, sel) for sel in selectors
                 )
             )
         except TimeoutException:
             logger.error("Page failed to load articles within timeout")
             return videos
 
-        articles = self.driver.find_elements(
-            By.CSS_SELECTOR, 'article[id^="jsid-post-"]'
-        )
+        articles = []
+        for sel in selectors:
+            articles.extend(self.driver.find_elements(By.CSS_SELECTOR, sel))
+
+        seen: set[str] = set()
+        unique_articles = []
+        for art in articles:
+            pid = (
+                art.get_attribute("data-entry-id")
+                or art.get_attribute("id")
+                or ""
+            )
+            if pid and pid not in seen:
+                seen.add(pid)
+                unique_articles.append(art)
+
+        articles = unique_articles
 
         for article in articles:
             video_data = self._extract_video_from_article(article, category)
@@ -137,7 +153,12 @@ class NineGagCrawler:
         self, article, category: str
     ) -> Optional[VideoData]:
         try:
-            post_id = article.get_attribute("id").replace("jsid-post-", "")
+            post_id = (
+                article.get_attribute("data-entry-id")
+                or article.get_attribute("id")
+                or ""
+            )
+            post_id = post_id.replace("jsid-post-", "")
             if not post_id:
                 return None
 

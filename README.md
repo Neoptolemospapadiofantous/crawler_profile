@@ -64,6 +64,16 @@ pa-cli video create --category cats
 # If the package isn't installed, replace `pa-cli` with `python -m src.cli`
 ```
 
+## 9GAG Video Creator
+
+Generate templated videos from 9GAG posts. Run the script with Python and
+provide your OpenAI API key via `--api-key`, the `OPENAI_API_KEY` environment
+variable, or a `.env` file:
+
+```bash
+python scripts/ninegag_video_creator.py --category cats --count 5
+```
+
 ## 9GAG Batch Uploader
 
 The script `ninegag_batch_uploader.py` downloads videos from 9GAG,

@@ -12,6 +12,10 @@ from pathlib import Path
 from typing import Dict, List
 
 import openai
+try:  # pragma: no cover - optional for tests
+    from openai import AsyncOpenAI
+except Exception:  # pragma: no cover - openai may be stubbed in tests
+    AsyncOpenAI = None
 
 from .crawler import VideoData
 
@@ -24,7 +28,11 @@ class AIContentGenerator:
 
     def __init__(self, api_key: str) -> None:
         self.api_key = api_key
-        openai.api_key = api_key
+        if AsyncOpenAI is not None:
+            self.client = AsyncOpenAI(api_key=api_key)
+        else:  # pragma: no cover - fallback for tests with stubbed openai
+            openai.api_key = api_key
+            self.client = openai
         self.cache_dir = Path(".ai_cache")
         self.cache_dir.mkdir(exist_ok=True)
 
@@ -177,7 +185,7 @@ class AIContentGenerator:
                 return cache_file.read_text()
         for attempt in range(3):  # pragma: no cover - external service
             try:
-                response = await openai.ChatCompletion.acreate(
+                response = await self.client.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[
                         {"role": "system", "content": "You are a viral social media expert. Create unique, engaging content."},

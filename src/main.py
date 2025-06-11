@@ -9,7 +9,7 @@ from pathlib import Path
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-from core.logging import LoggerManager, get_main_logger
+from core.logging import get_logger_manager, get_main_logger
 from config.settings import get_settings
 
 
@@ -17,24 +17,24 @@ def setup_application():
     """Initialize the application."""
     try:
         # Initialize logging
-        LoggerManager.initialize()
+        get_logger_manager()
         logger = get_main_logger()
         
         # Load and validate settings
         settings = get_settings()
         logger.info(
             "Application starting",
-            app_name=settings.name,
-            version=settings.version,
+            app_name=settings.app_name,
+            version=settings.app_version,
             environment=settings.environment
         )
         
         # Validate critical settings
-        if not settings.database.url:
+        if not settings.database_url:
             logger.error("Database URL not configured")
             sys.exit(1)
-        
-        if not settings.security.encryption_key:
+
+        if not settings.encryption_key:
             logger.error("Encryption key not configured")
             sys.exit(1)
         
@@ -75,8 +75,8 @@ def init():
         settings = get_settings()
         
         # Create data directories
-        settings.webdriver.profile_data_dir.mkdir(parents=True, exist_ok=True)
-        settings.logging.dir.mkdir(parents=True, exist_ok=True)
+        settings.profile_storage_path.mkdir(parents=True, exist_ok=True)
+        settings.log_dir.mkdir(parents=True, exist_ok=True)
         
         # Initialize database (placeholder - will implement in Phase 2)
         logger.info("Database initialization will be implemented in Phase 2")
@@ -96,13 +96,15 @@ def status():
     logger = get_main_logger()
     settings = get_settings()
     
-    click.echo(f"🚀 {settings.name} v{settings.version}")
+    click.echo(f"🚀 {settings.app_name} v{settings.app_version}")
     click.echo(f"Environment: {settings.environment}")
     click.echo(f"Debug mode: {settings.debug}")
-    click.echo(f"Log level: {settings.logging.level}")
-    click.echo(f"Database: {settings.database.host}:{settings.database.port}/{settings.database.name}")
-    click.echo(f"Profile directory: {settings.webdriver.profile_data_dir}")
-    click.echo(f"Proxy enabled: {settings.proxy.enabled}")
+    click.echo(f"Log level: {settings.log_level}")
+    click.echo(
+        f"Database: {settings.db_host}:{settings.db_port}/{settings.db_name}"
+    )
+    click.echo(f"Profile directory: {settings.profile_storage_path}")
+    click.echo(f"Proxy enabled: {settings.proxy_enabled}")
     
     # Check component status
     click.echo("\n📊 Component Status:")
@@ -115,7 +117,7 @@ def status():
         from selenium import webdriver
         from selenium.webdriver.chrome.service import Service
         
-        if settings.webdriver.chromedriver_path and Path(settings.webdriver.chromedriver_path).exists():
+        if settings.chromedriver_path and Path(settings.chromedriver_path).exists():
             click.echo("  ChromeDriver: ✅ Available")
         else:
             click.echo("  ChromeDriver: ❌ Not configured or not found")
@@ -123,7 +125,7 @@ def status():
         click.echo("  WebDriver: ❌ Selenium not installed")
     
     # Proxy service
-    if settings.proxy.enabled and settings.proxy.webshare_api_key:
+    if settings.proxy_enabled and settings.proxy_api_key:
         click.echo("  Proxy Service: ✅ Configured")
     else:
         click.echo("  Proxy Service: ❌ Not configured")

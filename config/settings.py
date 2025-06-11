@@ -32,6 +32,14 @@ class Settings(BaseSettings):
     app_version: str = Field(default="1.0.0", description="Application version")
     environment: Environment = Field(default=Environment.DEVELOPMENT, description="Runtime environment")
     debug: bool = Field(default=False, description="Debug mode")
+
+    # Database settings
+    db_host: str = Field(default="localhost", description="Database host")
+    db_port: int = Field(default=3306, description="Database port")
+    db_name: str = Field(default="profile_automation", description="Database name")
+    db_user: str = Field(default="root", description="Database user")
+    db_password: str = Field(default="", description="Database password")
+    database_url: Optional[str] = Field(default=None, description="Database connection URL")
     
     # Security settings
     secret_key: str = Field(default="", description="Application secret key")
@@ -87,6 +95,19 @@ class Settings(BaseSettings):
         """Ensure directory exists."""
         v.mkdir(parents=True, exist_ok=True)
         return v
+
+    @field_validator("database_url")
+    @classmethod
+    def assemble_database_url(cls, v: Optional[str], info) -> Optional[str]:
+        """Create database URL from components if not provided."""
+        if v:
+            return v
+        host = info.data.get("db_host")
+        port = info.data.get("db_port")
+        name = info.data.get("db_name")
+        user = info.data.get("db_user")
+        password = info.data.get("db_password")
+        return f"mysql+pymysql://{user}:{password}@{host}:{port}/{name}"
     
     def get_webdriver_options(self) -> Dict[str, Any]:
         """Get WebDriver configuration options."""

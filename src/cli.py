@@ -21,8 +21,8 @@ def main(ctx):
     ctx.ensure_object(dict)
     
     # Initialize logging
-    from core.logging import LoggerManager
-    LoggerManager.initialize()
+    from core.logging import get_logger_manager
+    get_logger_manager()
     
     logger = get_main_logger()
     ctx.obj['logger'] = logger
@@ -162,9 +162,9 @@ def show(ctx):
     click.echo("⚙️  Current Configuration:")
     click.echo(f"  Environment: {settings.environment}")
     click.echo(f"  Debug: {settings.debug}")
-    click.echo(f"  Database: {settings.database.host}:{settings.database.port}")
-    click.echo(f"  Log Level: {settings.logging.level}")
-    click.echo(f"  Proxy Enabled: {settings.proxy.enabled}")
+    click.echo(f"  Database: {settings.db_host}:{settings.db_port}")
+    click.echo(f"  Log Level: {settings.log_level}")
+    click.echo(f"  Proxy Enabled: {settings.proxy_enabled}")
     
     logger.info("Configuration displayed")
 
@@ -184,10 +184,10 @@ def validate(ctx):
         # Basic validation
         errors = []
         
-        if not settings.database.url:
+        if not settings.database_url:
             errors.append("Database URL not configured")
-        
-        if not settings.security.encryption_key:
+
+        if not settings.encryption_key:
             errors.append("Encryption key not configured")
         
         if errors:

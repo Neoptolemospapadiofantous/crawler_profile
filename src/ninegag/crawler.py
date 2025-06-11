@@ -127,7 +127,12 @@ class NineGagCrawler:
 
     def _extract_all_videos(self, category: str) -> List[VideoData]:
         videos: List[VideoData] = []
-        selectors = ["article[data-entry-id]", 'article[id^="jsid-post-"]']
+        selectors = [
+            "article[data-entry-id]",
+            'article[id^="jsid-post-"]',
+            "article[data-post-id]",
+            "article",
+        ]
 
         try:
             WebDriverWait(self.driver, 30).until(
@@ -165,6 +170,7 @@ class NineGagCrawler:
         for art in articles:
             pid = (
                 art.get_attribute("data-entry-id")
+                or art.get_attribute("data-post-id")
                 or art.get_attribute("id")
                 or ""
             )
@@ -188,6 +194,7 @@ class NineGagCrawler:
         try:
             post_id = (
                 article.get_attribute("data-entry-id")
+                or article.get_attribute("data-post-id")
                 or article.get_attribute("id")
                 or ""
             )
@@ -253,7 +260,15 @@ class NineGagCrawler:
                 if author_elem:
                     author = author_elem.text
             except Exception:
-                pass
+                try:
+                    meta_elem = article.find_element(
+                        By.CSS_SELECTOR,
+                        ".post-meta__list-view a.name",
+                    )
+                    if meta_elem:
+                        author = meta_elem.text
+                except Exception:
+                    pass
 
             tags: List[str] = []
             try:

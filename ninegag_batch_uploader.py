@@ -12,7 +12,6 @@ additional error handling for production use.
 from __future__ import annotations
 
 import json
-import logging
 import subprocess
 from argparse import ArgumentParser
 from dataclasses import dataclass
@@ -27,24 +26,10 @@ from selenium.webdriver.chrome.options import Options
 
 # Local modules
 from ninegag.crawler import NineGagCrawler
+from core.logging import get_logger_manager, get_logger
 
-# ---------------------------------------------------------------------------
-# Logging setup
-# ---------------------------------------------------------------------------
-LOG_DIR = Path("logs")
-LOG_DIR.mkdir(exist_ok=True)
-logger = logging.getLogger("ninegag_batch_uploader")
-logger.setLevel(logging.INFO)
-file_handler = logging.FileHandler(
-    LOG_DIR / f"batch_uploader_{datetime.now().date()}.log"
-)
-file_handler.setFormatter(
-    logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-)
-logger.addHandler(file_handler)
-console = logging.StreamHandler()
-console.setFormatter(logging.Formatter("%(levelname)s - %(message)s"))
-logger.addHandler(console)
+get_logger_manager()
+logger = get_logger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -215,19 +200,30 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    videos = crawl_9gag_videos(args.date, driver_path=args.driver_path)
-    processed: List[Path] = []
-    for video in videos:
-        if video.downloaded_path:
-            try:
-                processed.append(apply_template(video.downloaded_path, args.template))
-            except Exception:
-                continue
-    registry = _load_registry()
-    template_info = registry.get(args.template, {})
-    channels = template_info.get("channels", [])
-    for channel in channels:
-        upload_to_channel(processed, channel)
+    logger.info(
+        "Starting batch uploader", date=args.date, template=args.template
+    )
+
+    try:
+        videos = crawl_9gag_videos(args.date, driver_path=args.driver_path)
+        processed: List[Path] = []
+        for video in videos:
+            if video.downloaded_path:
+                try:
+                    processed.append(
+                        apply_template(video.downloaded_path, args.template)
+                    )
+                except Exception:
+                    continue
+        registry = _load_registry()
+        template_info = registry.get(args.template, {})
+        channels = template_info.get("channels", [])
+        for channel in channels:
+            upload_to_channel(processed, channel)
+        logger.info("Batch upload completed successfully")
+    except Exception as exc:
+        logger.error("Batch upload failed: %s", exc)
+        raise
 
 
 if __name__ == "__main__":

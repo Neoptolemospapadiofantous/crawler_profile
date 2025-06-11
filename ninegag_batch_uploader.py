@@ -12,7 +12,6 @@ additional error handling for production use.
 from __future__ import annotations
 
 import json
-import logging
 import subprocess
 from argparse import ArgumentParser
 from dataclasses import dataclass
@@ -25,26 +24,13 @@ import yaml
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
+from core.logging import get_logger_manager, get_logger
+
 # Local modules
 from ninegag.crawler import NineGagCrawler
 
-# ---------------------------------------------------------------------------
-# Logging setup
-# ---------------------------------------------------------------------------
-LOG_DIR = Path("logs")
-LOG_DIR.mkdir(exist_ok=True)
-logger = logging.getLogger("ninegag_batch_uploader")
-logger.setLevel(logging.INFO)
-file_handler = logging.FileHandler(
-    LOG_DIR / f"batch_uploader_{datetime.now().date()}.log"
-)
-file_handler.setFormatter(
-    logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-)
-logger.addHandler(file_handler)
-console = logging.StreamHandler()
-console.setFormatter(logging.Formatter("%(levelname)s - %(message)s"))
-logger.addHandler(console)
+get_logger_manager()
+logger = get_logger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -215,6 +201,8 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    logger.info("Starting ninegag_batch_uploader for date=%s template=%s", args.date, args.template)
+
     videos = crawl_9gag_videos(args.date, driver_path=args.driver_path)
     processed: List[Path] = []
     for video in videos:
@@ -229,6 +217,12 @@ def main() -> None:
     for channel in channels:
         upload_to_channel(processed, channel)
 
+    logger.info("ninegag_batch_uploader completed successfully")
+
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as exc:
+        logger.error("ninegag_batch_uploader failed: %s", exc)
+        raise

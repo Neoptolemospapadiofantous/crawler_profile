@@ -6,7 +6,11 @@ import os
 from argparse import ArgumentParser
 from pathlib import Path
 
+from core.logging import get_logger_manager, get_logger
 from ninegag import NineGagVideoCreator
+
+get_logger_manager()
+logger = get_logger(__name__)
 
 
 def main() -> None:
@@ -29,6 +33,7 @@ def main() -> None:
         print("Please provide OpenAI API key via --api-key, OPENAI_API_KEY env var, or .env file")
         return
 
+    logger.info("Starting ninegag_video_creator with category='%s' count=%s", args.category, args.count)
     creator = NineGagVideoCreator(api_key)
 
     async def _run() -> None:
@@ -36,6 +41,10 @@ def main() -> None:
 
     try:
         asyncio.run(_run())
+        logger.info("ninegag_video_creator completed successfully")
+    except Exception as exc:
+        logger.error("ninegag_video_creator failed: %s", exc)
+        raise
     finally:
         creator.cleanup()
 

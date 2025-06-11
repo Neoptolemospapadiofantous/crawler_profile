@@ -93,6 +93,15 @@ See [Configuration Guide](docs/user-guide/configuration.md) for detailed setup i
 - [API Reference](docs/api/README.md)
 - [Development Guide](docs/development/README.md)
 
+## 🧪 Running Tests
+
+The project uses `pytest` for unit testing. After installing the development
+dependencies, run all tests with:
+
+```bash
+pytest
+```
+
 ## 🤝 Contributing
 
 1. Fork the repository

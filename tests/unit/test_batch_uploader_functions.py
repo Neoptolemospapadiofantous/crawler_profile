@@ -59,7 +59,14 @@ def test_apply_template_returns_output_path(tmp_path, monkeypatch):
     template_file.write_bytes(b"tmpl")
     monkeypatch.setattr(
         "ninegag_batch_uploader._load_registry",
-        lambda: {"temp": {"path": str(template_file), "channels": [], "steps": []}},
+        lambda: {
+            "temp": {
+                "path": str(tmp_path),
+                "asset": str(template_file),
+                "channels": [],
+                "steps": [],
+            }
+        },
     )
 
     created = {}

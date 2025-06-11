@@ -182,7 +182,7 @@ class AIContentGenerator:
                 if use_cache:
                     cache_file.write_text(result)
                 return result
-            except openai.error.RateLimitError:
+            except openai.RateLimitError:
                 if attempt < 2:
                     wait_time = (attempt + 1) * 20
                     logger.warning("Rate limit hit, waiting %s seconds...", wait_time)

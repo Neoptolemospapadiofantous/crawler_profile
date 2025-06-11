@@ -145,6 +145,26 @@ def list_tasks(ctx, status, profile_id):
     click.echo("⏳ Task listing will be implemented in Phase 5")
 
 
+# Template Commands
+@main.group()
+def template() -> None:
+    """Template management commands."""
+    pass
+
+
+@template.command()
+@click.argument('path', type=click.Path(exists=True, file_okay=False))
+@click.pass_context
+def register(ctx, path):
+    """Register a template directory."""
+    logger = ctx.obj['logger']
+    from ninegag_batch_uploader import register_template
+
+    register_template(Path(path))
+    click.echo(f"✅ Registered template from {path}")
+    logger.info("Template registered", path=path)
+
+
 # Video Creation Commands
 @main.group()
 def video() -> None:

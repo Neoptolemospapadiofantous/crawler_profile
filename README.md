@@ -62,6 +62,9 @@ pa-cli task execute --profile-id 1 --task-type youtube-channel
 # Generate videos
 pa-cli video create --category cats
 
+# Register a template
+pa-cli template register templates/FunnyIntro
+
 # If the package isn't installed, replace `pa-cli` with `python -m src.cli`
 ```
 

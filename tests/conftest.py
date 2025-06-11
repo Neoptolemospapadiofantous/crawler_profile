@@ -17,6 +17,74 @@ if "requests" not in sys.modules:
     requests.get = dummy_get
     sys.modules["requests"] = requests
 
+# Minimal 'pydantic' and 'pydantic_settings' stubs
+if "pydantic" not in sys.modules:
+    pydantic = types.ModuleType("pydantic")
+
+    def Field(default=None, **kwargs):
+        return default
+
+    def field_validator(*args, **kwargs):
+        def decorator(fn):
+            return fn
+        return decorator
+
+    pydantic.Field = Field
+    pydantic.field_validator = field_validator
+    sys.modules["pydantic"] = pydantic
+
+if "pydantic_settings" not in sys.modules:
+    ps = types.ModuleType("pydantic_settings")
+
+    class BaseSettings:
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+
+    SettingsConfigDict = dict
+
+    ps.BaseSettings = BaseSettings
+    ps.SettingsConfigDict = SettingsConfigDict
+    sys.modules["pydantic_settings"] = ps
+
+# Minimal 'structlog' stub
+if "structlog" not in sys.modules:
+    structlog = types.ModuleType("structlog")
+
+    class DummyLogger:
+        def __getattr__(self, name):
+            def _(*args, **kwargs):
+                return None
+            return _
+
+    class LoggerFactory:
+        def __call__(self, *args, **kwargs):
+            return DummyLogger()
+
+    structlog.stdlib = types.ModuleType("structlog.stdlib")
+    structlog.stdlib.filter_by_level = lambda *a, **k: None
+    structlog.stdlib.add_logger_name = lambda *a, **k: None
+    structlog.stdlib.add_log_level = lambda *a, **k: None
+    structlog.stdlib.PositionalArgumentsFormatter = lambda: None
+    structlog.stdlib.LoggerFactory = LoggerFactory
+
+    structlog.processors = types.ModuleType("structlog.processors")
+    structlog.processors.TimeStamper = lambda fmt=None: (lambda *a, **k: None)
+    structlog.processors.StackInfoRenderer = lambda *a, **k: None
+    structlog.processors.format_exc_info = lambda *a, **k: None
+    structlog.processors.JSONRenderer = lambda: (lambda *a, **k: None)
+
+    structlog.dev = types.ModuleType("structlog.dev")
+    structlog.dev.ConsoleRenderer = lambda: (lambda *a, **k: None)
+
+    structlog.configure = lambda *a, **k: None
+    structlog.get_logger = lambda name=None: DummyLogger()
+
+    sys.modules["structlog"] = structlog
+    sys.modules["structlog.stdlib"] = structlog.stdlib
+    sys.modules["structlog.processors"] = structlog.processors
+    sys.modules["structlog.dev"] = structlog.dev
+
 # Minimal 'yaml' stub using JSON for simplicity
 if "yaml" not in sys.modules:
     yaml = types.ModuleType("yaml")

@@ -50,5 +50,10 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    logger.info("Launching ninegag_video_creator script")
+    try:
+        main()
+    except Exception:
+        logger.exception("ninegag_video_creator run failed")
+        raise
 

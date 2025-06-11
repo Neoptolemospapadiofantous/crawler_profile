@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import logging
+from core.logging import get_logger
 import subprocess
 from pathlib import Path
 from typing import Optional
@@ -14,7 +14,7 @@ DEFAULT_REQUEST_TIMEOUT = 10
 from .crawler import VideoData
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class VideoProcessor:

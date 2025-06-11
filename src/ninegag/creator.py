@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-import logging
+from core.logging import get_logger
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List
@@ -13,7 +13,7 @@ from .crawler import NineGagCrawler, VideoData
 from .processor import VideoProcessor
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class NineGagVideoCreator:

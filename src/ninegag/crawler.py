@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import logging
+from core.logging import get_logger
 import os
 import re
 import time
@@ -20,7 +20,7 @@ from selenium.common.exceptions import TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @dataclass

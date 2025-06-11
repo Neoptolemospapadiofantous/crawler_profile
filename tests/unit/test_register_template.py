@@ -3,8 +3,6 @@ from pathlib import Path
 
 import pytest
 
-pytest.importorskip("requests")
-
 from ninegag_batch_uploader import register_template, REGISTRY_PATH
 
 

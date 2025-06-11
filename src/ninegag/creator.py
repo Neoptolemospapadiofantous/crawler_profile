@@ -36,7 +36,7 @@ class NineGagVideoCreator:
             ".ai_cache",
         ]:
             Path(dir_path).mkdir(parents=True, exist_ok=True)
-        logger.info("✅ All directories created")
+        logger.info("All directories created")
 
     async def create_daily_content(self, category: str, count: int = 10) -> List[Dict]:
         logger.info("Creating content for: %s", category)
@@ -80,7 +80,7 @@ class NineGagVideoCreator:
                             "created_at": datetime.now().isoformat(),
                         }
                     )
-                    logger.info("✅ Video created successfully!")
+                    logger.info("Video created successfully!")
             except Exception as exc:  # pragma: no cover - network/dependency
                 logger.error("Failed to process video: %s", exc)
         self._save_results(results, category)

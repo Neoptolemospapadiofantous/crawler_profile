@@ -70,6 +70,8 @@ class LoggerManager:
                         handler['filename'] = str(self.settings.log_dir / file_path)
                     else:
                         handler['filename'] = str(file_path)
+
+                    handler.setdefault('encoding', 'utf-8')
                     
             logging.config.dictConfig(config)
         except Exception as e:
@@ -101,6 +103,7 @@ class LoggerManager:
                     'level': self.settings.log_level,
                     'formatter': 'json' if self.settings.log_format == 'json' else 'standard',
                     'filename': str(self.settings.log_dir / 'app.log'),
+                    'encoding': 'utf-8',
                     'maxBytes': 10485760,  # 10MB
                     'backupCount': 5
                 }

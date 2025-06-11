@@ -25,6 +25,7 @@ handlers:
     level: DEBUG
     formatter: detailed
     filename: app.log
+    encoding: utf-8
     maxBytes: 10485760  # 10MB
     backupCount: 5
   
@@ -33,6 +34,7 @@ handlers:
     level: DEBUG
     formatter: detailed
     filename: profiles.log
+    encoding: utf-8
     maxBytes: 10485760
     backupCount: 5
   
@@ -41,6 +43,7 @@ handlers:
     level: DEBUG
     formatter: detailed
     filename: database.log
+    encoding: utf-8
     maxBytes: 10485760
     backupCount: 5
   
@@ -49,6 +52,7 @@ handlers:
     level: DEBUG
     formatter: detailed
     filename: tasks.log
+    encoding: utf-8
     maxBytes: 10485760
     backupCount: 5
   
@@ -57,6 +61,7 @@ handlers:
     level: DEBUG
     formatter: detailed
     filename: automation.log
+    encoding: utf-8
     maxBytes: 10485760
     backupCount: 5
   
@@ -65,6 +70,7 @@ handlers:
     level: ERROR
     formatter: detailed
     filename: errors.log
+    encoding: utf-8
     maxBytes: 10485760
     backupCount: 10
 

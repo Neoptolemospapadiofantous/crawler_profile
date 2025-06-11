@@ -39,6 +39,18 @@ class DummyCrawler:
                 published=datetime(2023, 1, 2, 12, 0, 0),
                 category=category,
             ),
+            VideoData(
+                post_id="nopub",
+                title="No Date",
+                video_url="http://example.com/video3.mp4",
+                mobile_url="http://example.com/video3.mp4",
+                thumbnail_url="",
+                author="tester",
+                tags=[],
+                stats={"upvotes": 1, "comments": 0},
+                published=None,
+                category=category,
+            ),
         ]
 
     def close(self):
@@ -63,10 +75,13 @@ def test_crawl_9gag_videos_downloads_to_path(tmp_path, monkeypatch):
     results = crawl_9gag_videos("2023-01-01")
 
     expected = tmp_path / "downloads" / "2023-01-01" / "abc.mp4"
+    extra = tmp_path / "downloads" / "2023-01-01" / "nopub.mp4"
     skipped = tmp_path / "downloads" / "2023-01-01" / "xyz.mp4"
-    assert len(results) == 1
-    assert results[0].downloaded_path.resolve() == expected.resolve()
+    assert len(results) == 2
+    names = {r.downloaded_path.name for r in results}
+    assert names == {"abc.mp4", "nopub.mp4"}
     assert expected.exists()
+    assert extra.exists()
     assert not skipped.exists()
 
 

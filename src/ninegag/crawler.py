@@ -18,6 +18,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
+from pathlib import Path
 
 
 logger = get_logger(__name__)
@@ -82,11 +83,9 @@ class NineGagCrawler:
                 )
                 raise
 
-        chromedriver_path = (
-            driver_path
-            if os.name != "nt"
-            else os.path.join(os.path.dirname(driver_path), "chromedriver.exe")
-        )
+        chromedriver_path = driver_path
+        if os.name == "nt" and Path(driver_path).is_dir():
+            chromedriver_path = os.path.join(driver_path, "chromedriver.exe")
         service = Service(chromedriver_path)
 
         self.driver = webdriver.Chrome(service=service, options=chrome_options)

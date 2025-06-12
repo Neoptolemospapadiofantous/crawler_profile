@@ -216,6 +216,102 @@ def test_init_uses_env_var(monkeypatch):
     assert called["count"] == 0
 
 
+def test_init_with_directory_path(monkeypatch, tmp_path):
+    crawler_mod = load_crawler_module()
+    recorded = {}
+
+    def fake_chrome(*args, **kwargs):
+        recorded["path"] = kwargs["service"].path
+        class D:
+            def execute_script(self, *a, **k):
+                pass
+        return D()
+
+    monkeypatch.setattr(crawler_mod.webdriver, "Chrome", fake_chrome)
+    monkeypatch.delenv("CHROMEDRIVER_PATH", raising=False)
+
+    dir_path = tmp_path / "driver"
+    dir_path.mkdir()
+    crawler_mod.NineGagCrawler(driver_path=str(dir_path))
+
+    expected = (
+        str(dir_path / "chromedriver.exe")
+        if crawler_mod.os.name == "nt"
+        else str(dir_path)
+    )
+    assert recorded["path"] == expected
+
+
+def test_init_with_executable_path(monkeypatch, tmp_path):
+    crawler_mod = load_crawler_module()
+    recorded = {}
+
+    def fake_chrome(*args, **kwargs):
+        recorded["path"] = kwargs["service"].path
+        class D:
+            def execute_script(self, *a, **k):
+                pass
+        return D()
+
+    monkeypatch.setattr(crawler_mod.webdriver, "Chrome", fake_chrome)
+    monkeypatch.delenv("CHROMEDRIVER_PATH", raising=False)
+
+    exe_name = "chromedriver.exe" if crawler_mod.os.name == "nt" else "chromedriver"
+    exe_path = tmp_path / exe_name
+    exe_path.write_text("")
+    crawler_mod.NineGagCrawler(driver_path=str(exe_path))
+    assert recorded["path"] == str(exe_path)
+
+
+def test_env_var_directory(monkeypatch, tmp_path):
+    crawler_mod = load_crawler_module()
+    recorded = {}
+
+    def fake_chrome(*args, **kwargs):
+        recorded["path"] = kwargs["service"].path
+        class D:
+            def execute_script(self, *a, **k):
+                pass
+        return D()
+
+    monkeypatch.setattr(crawler_mod.webdriver, "Chrome", fake_chrome)
+
+    dir_path = tmp_path / "driver"
+    dir_path.mkdir()
+    monkeypatch.setenv("CHROMEDRIVER_PATH", str(dir_path))
+
+    crawler_mod.NineGagCrawler()
+
+    expected = (
+        str(dir_path / "chromedriver.exe")
+        if crawler_mod.os.name == "nt"
+        else str(dir_path)
+    )
+    assert recorded["path"] == expected
+
+
+def test_env_var_executable(monkeypatch, tmp_path):
+    crawler_mod = load_crawler_module()
+    recorded = {}
+
+    def fake_chrome(*args, **kwargs):
+        recorded["path"] = kwargs["service"].path
+        class D:
+            def execute_script(self, *a, **k):
+                pass
+        return D()
+
+    monkeypatch.setattr(crawler_mod.webdriver, "Chrome", fake_chrome)
+
+    exe_name = "chromedriver.exe" if crawler_mod.os.name == "nt" else "chromedriver"
+    exe_path = tmp_path / exe_name
+    exe_path.write_text("")
+    monkeypatch.setenv("CHROMEDRIVER_PATH", str(exe_path))
+
+    crawler_mod.NineGagCrawler()
+    assert recorded["path"] == str(exe_path)
+
+
 def test_init_logs_error_on_download_failure(monkeypatch):
     crawler_mod = load_crawler_module()
     logged = {}

@@ -131,6 +131,10 @@ class NineGagCrawler:
             "article[data-entry-id]",
             'article[id^="jsid-post-"]',
             "article[data-post-id]",
+            "div[data-entry-id]",
+            "div[data-post-id]",
+            "div.post-container",
+            "div[class*='post-item']",
             "article",
         ]
 

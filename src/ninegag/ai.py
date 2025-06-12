@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-from core.logging import get_logger
+from core.logging import get_logger, log_method_calls
 import random
 import time
 from datetime import datetime
@@ -26,6 +26,7 @@ logger = get_logger(__name__)
 class AIContentGenerator:
     """Generate titles, hooks and descriptions using OpenAI."""
 
+    @log_method_calls
     def __init__(self, api_key: str) -> None:
         self.api_key = api_key
         if AsyncOpenAI is not None:
@@ -36,6 +37,7 @@ class AIContentGenerator:
         self.cache_dir = Path(".ai_cache")
         self.cache_dir.mkdir(exist_ok=True)
 
+    @log_method_calls
     async def generate_new_title(self, video: VideoData) -> str:
         title_styles = [
             "clickbait question",
@@ -58,6 +60,7 @@ class AIContentGenerator:
             logger.error("Title generation failed: %s", exc)
             return f"This {video.category.title()} Video Changes Everything"
 
+    @log_method_calls
     async def generate_hook(self, video: VideoData) -> str:
         hook_patterns = [
             "POV format",
@@ -88,6 +91,7 @@ class AIContentGenerator:
             logger.error("AI hook generation failed: %s", exc)
             return "You need to see this 👀"
 
+    @log_method_calls
     async def generate_subtitle(self, video: VideoData, hook: str) -> str:
         strategies = [
             "social_proof",
@@ -116,6 +120,7 @@ class AIContentGenerator:
             logger.error("AI subtitle generation failed: %s", exc)
             return "📱 Breaking the internet"
 
+    @log_method_calls
     async def generate_description(self, video: VideoData, hook: str) -> str:
         prompt = (
             f"Write a 2-3 sentence description for this {video.category} video.\n"
@@ -128,6 +133,7 @@ class AIContentGenerator:
             logger.error("Description generation failed: %s", exc)
             return f"This is the {video.category} content that broke the internet."
 
+    @log_method_calls
     async def generate_hashtags(self, video: VideoData, count: int = 10) -> List[str]:
         prompt = (
             f"Generate {count} viral hashtags for this {video.category} video.\n"
@@ -143,6 +149,7 @@ class AIContentGenerator:
             logger.error("Hashtag generation failed: %s", exc)
             return [f"#{video.category}"]
 
+    @log_method_calls
     async def analyze_category(self, videos: List[VideoData]) -> Dict:
         top_videos = sorted(videos, key=lambda v: v.stats["upvotes"], reverse=True)[:5]
         titles = [v.title for v in top_videos]
@@ -167,6 +174,7 @@ class AIContentGenerator:
             logger.error("Category analysis failed: %s", exc)
             return {"analysis": "Analysis failed", "error": str(exc)}
 
+    @log_method_calls
     async def _get_ai_response(self, prompt: str, temperature: float = 0.8, max_tokens: int = 100) -> str:
         logger.debug(
             "Starting _get_ai_response temp=%s max_tokens=%s prompt='%s'",

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from core.logging import get_logger
+from core.logging import get_logger, log_method_calls
 import subprocess
 from pathlib import Path
 from typing import Optional
@@ -20,11 +20,13 @@ logger = get_logger(__name__)
 class VideoProcessor:
     """Download videos and render templates using FFmpeg."""
 
+    @log_method_calls
     def __init__(self, request_timeout: int | float = DEFAULT_REQUEST_TIMEOUT) -> None:
         self.output_dir = Path("./output")
         self.output_dir.mkdir(exist_ok=True)
         self.request_timeout = request_timeout
 
+    @log_method_calls
     def download_video(self, video: VideoData) -> Optional[Path]:
         download_dir = self.output_dir / "downloads" / video.category
         download_dir.mkdir(parents=True, exist_ok=True)
@@ -46,6 +48,7 @@ class VideoProcessor:
             logger.error("Download failed for %s: %s", video.post_id, exc)
             return None
 
+    @log_method_calls
     def create_templated_video(
         self,
         video_path: Path,
@@ -134,6 +137,7 @@ class VideoProcessor:
             )
             return None
 
+    @log_method_calls
     def _escape_text(self, text: str) -> str:
         replacements = [
             ("\\", "\\\\"),

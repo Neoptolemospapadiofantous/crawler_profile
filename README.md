@@ -130,26 +130,19 @@ python ninegag_batch_uploader.py --date 2025-06-11 --template FunnyIntro
 ```
 profile-automation-system/
 ├── src/                    # Main application code
-│   ├── core/              # Core functionality
 │   ├── automation/        # Web automation tasks
-│   ├── profiles/          # Profile management
-│   ├── ui/               # User interfaces
-│   └── utils/            # Utility functions
+│   ├── core/             # Core functionality
+│   └── ninegag/          # 9GAG helpers
 ├── config/               # Configuration files
+├── templates/            # Video templates
+├── scripts/             # Setup and utility scripts
 ├── tests/               # Test suite
-├── docs/                # Documentation
-└── scripts/             # Setup and utility scripts
+└── ninegag_batch_uploader.py  # Batch upload script
 ```
 
 ## 🔧 Configuration
 
-See [Configuration Guide](docs/user-guide/configuration.md) for detailed setup instructions.
-
-## 📚 Documentation
-
-- [User Guide](docs/user-guide/README.md)
-- [API Reference](docs/api/README.md)
-- [Development Guide](docs/development/README.md)
+Configuration files live in the `config/` directory. Copy `.env.example` to `.env` and update the values for your environment.
 
 ## 🧪 Testing
 

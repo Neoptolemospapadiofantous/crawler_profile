@@ -138,6 +138,28 @@ class NineGagCrawler:
     @log_method_calls
     def _extract_all_videos(self, category: str) -> List[VideoData]:
         videos: List[VideoData] = []
+
+        container_selector = "#list-view-2 .stream-container"
+        containers = self.driver.find_elements(By.CSS_SELECTOR, container_selector)
+        max_scrolls = 3
+        attempt = 0
+        while not containers and attempt < max_scrolls and hasattr(self.driver, "execute_script"):
+            attempt += 1
+            logger.debug("Scrolling to find stream container (attempt %d)", attempt)
+            try:
+                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            except Exception:
+                break
+            time.sleep(2)
+            containers = self.driver.find_elements(By.CSS_SELECTOR, container_selector)
+
+        if containers:
+            search_root = containers[0]
+        else:
+            search_root = self.driver
+            if attempt:
+                logger.warning("Stream container not found after %d attempts", attempt)
+
         selectors = [
             "article[data-entry-id]",
             'article[id^="jsid-post-"]',
@@ -152,7 +174,7 @@ class NineGagCrawler:
         try:
             WebDriverWait(self.driver, 30).until(
                 lambda d: any(
-                    d.find_elements(By.CSS_SELECTOR, sel) for sel in selectors
+                    search_root.find_elements(By.CSS_SELECTOR, sel) for sel in selectors
                 )
             )
         except TimeoutException:
@@ -161,7 +183,7 @@ class NineGagCrawler:
 
         articles = []
         for sel in selectors:
-            articles.extend(self.driver.find_elements(By.CSS_SELECTOR, sel))
+            articles.extend(search_root.find_elements(By.CSS_SELECTOR, sel))
 
         if not articles and hasattr(self.driver, "execute_script"):
             logger.warning("No articles found, retrying scroll")
@@ -175,7 +197,7 @@ class NineGagCrawler:
                 time.sleep(2)
                 for sel in selectors:
                     articles.extend(
-                        self.driver.find_elements(By.CSS_SELECTOR, sel)
+                        search_root.find_elements(By.CSS_SELECTOR, sel)
                     )
                 if articles:
                     break

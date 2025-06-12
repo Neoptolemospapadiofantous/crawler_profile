@@ -98,17 +98,32 @@ def load_crawler_module():
 
 
 class DummyElement:
-    def __init__(self, attrs):
+    def __init__(self, attrs, html=""):
         self.attrs = attrs
+        self.html = html
+
     def get_attribute(self, name):
         return self.attrs.get(name)
+
+    def find_elements(self, by, selector):
+        driver = DummyDriver(self.html)
+        return driver.find_elements(by, selector)
 
 
 class DummyDriver:
     def __init__(self, html: str):
         self.html = html
+        self.scrolled = 0
     def find_elements(self, by, selector):
         results = []
+        if selector == "#list-view-2 .stream-container":
+            m = re.search(r'<div[^>]*id="list-view-2"[^>]*>(.*?)</div>', self.html, re.DOTALL)
+            if m:
+                inner = m.group(1)
+                m2 = re.search(r'<div[^>]*class="[^\"]*stream-container[^\"]*"[^>]*>(.*?)</div>', inner, re.DOTALL)
+                if m2:
+                    results.append(DummyElement({}, m2.group(1)))
+            return results
         if selector == "article[data-entry-id]":
             for m in re.finditer(r'<article[^>]*data-entry-id="([^"]+)"', self.html):
                 results.append(DummyElement({"data-entry-id": m.group(1)}))
@@ -133,16 +148,21 @@ class DummyDriver:
                 results.append(DummyElement({attr: m.group(2)}))
         return results
 
+    def execute_script(self, script):
+        self.scrolled += 1
+
 
 def test_extract_all_videos_detects_posts(monkeypatch):
     crawler_mod = load_crawler_module()
     html = (
+        '<div id="list-view-2"><div class="stream-container">'
         '<article data-entry-id="a1"></article>'
         '<div data-entry-id="c3"></div>'
         '<article id="jsid-post-b2"></article>'
         '<div data-post-id="d4"></div>'
         '<div class="post-container" data-entry-id="e5" data-post-id="e5"></div>'
         '<div class="item post-item" data-entry-id="f6" data-post-id="f6"></div>'
+        '</div></div>'
     )
     driver = DummyDriver(html)
     crawler = crawler_mod.NineGagCrawler.__new__(crawler_mod.NineGagCrawler)
@@ -173,6 +193,34 @@ def test_extract_all_videos_detects_posts(monkeypatch):
     videos = crawler._extract_all_videos("hot")
     ids = [v.post_id for v in videos]
     assert set(ids) == {"a1", "b2", "c3", "d4", "e5", "f6"}
+
+
+def test_extract_all_videos_scrolls_when_container_missing(monkeypatch):
+    crawler_mod = load_crawler_module()
+    driver = DummyDriver("")
+    crawler = crawler_mod.NineGagCrawler.__new__(crawler_mod.NineGagCrawler)
+    crawler.driver = driver
+
+    monkeypatch.setattr(crawler_mod.time, "sleep", lambda *a: None)
+
+    log_msgs = []
+
+    class Logger:
+        def debug(self, msg, *args):
+            log_msgs.append(msg % args if args else msg)
+        def info(self, *a, **k):
+            pass
+        def warning(self, *a, **k):
+            pass
+        def error(self, *a, **k):
+            pass
+
+    monkeypatch.setattr(crawler_mod, "logger", Logger())
+
+    videos = crawler._extract_all_videos("hot")
+    assert videos == []
+    assert driver.scrolled >= 3
+    assert any("attempt" in m for m in log_msgs)
 
 
 def test_init_uses_given_driver_path(monkeypatch):

@@ -121,11 +121,20 @@ class NineGagCrawler:
         except Exception:
             pass
 
-        for _ in range(scroll_times):
+        list_view = self.driver.find_elements(By.CSS_SELECTOR, "#list-view-2")
+        logger.debug("#list-view-2 present before scrolling: %s", bool(list_view))
+
+        for i in range(scroll_times):
+            if list_view:
+                break
             self.driver.execute_script(
                 "window.scrollTo(0, document.body.scrollHeight);"
             )
+            logger.debug("Scroll attempt %d searching for #list-view-2", i + 1)
             time.sleep(2)
+            list_view = self.driver.find_elements(By.CSS_SELECTOR, "#list-view-2")
+            if list_view:
+                logger.debug("Found #list-view-2 after %d scrolls", i + 1)
 
         videos = self._extract_all_videos(category)
         logger.debug(
@@ -158,6 +167,42 @@ class NineGagCrawler:
         except TimeoutException:
             logger.error("Page failed to load articles within timeout")
             return videos
+
+        list_view_found = bool(
+            self.driver.find_elements(By.CSS_SELECTOR, "#list-view-2")
+        )
+        logger.debug("#list-view-2 exists before extraction: %s", list_view_found)
+
+        attempts = 0
+        while not list_view_found and attempts < 5:
+            attempts += 1
+            try:
+                self.driver.execute_script(
+                    "window.scrollTo(0, document.body.scrollHeight);"
+                )
+                logger.debug(
+                    "Scrolling attempt %d while searching for #list-view-2",
+                    attempts,
+                )
+            except Exception:
+                break
+            time.sleep(2)
+            list_view_found = bool(
+                self.driver.find_elements(By.CSS_SELECTOR, "#list-view-2")
+            )
+        if list_view_found:
+            logger.debug("Located #list-view-2 after %d scrolls", attempts)
+            try:
+                stream = self.driver.find_element(
+                    By.CSS_SELECTOR, "#list-view-2 .stream-container"
+                )
+                articles_in_stream = stream.find_elements(By.TAG_NAME, "article")
+                logger.debug(
+                    "#list-view-2 .stream-container contains %d <article> elements",
+                    len(articles_in_stream),
+                )
+            except Exception:
+                logger.debug(".stream-container not found inside #list-view-2")
 
         articles = []
         for sel in selectors:

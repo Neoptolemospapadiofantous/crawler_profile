@@ -72,7 +72,15 @@ class NineGagCrawler:
 
         driver_path = self.driver_path or os.getenv("CHROMEDRIVER_PATH")
         if not driver_path:
-            driver_path = ChromeDriverManager().install()
+            try:
+                driver_path = ChromeDriverManager().install()
+            except Exception as exc:  # pragma: no cover - download failure path
+                logger.error(
+                    "Failed to download ChromeDriver: %s. "
+                    "Set CHROMEDRIVER_PATH environment variable to a valid driver path.",
+                    exc,
+                )
+                raise
 
         chromedriver_path = (
             driver_path

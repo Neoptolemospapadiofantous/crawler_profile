@@ -210,20 +210,32 @@ echo ""
 echo "📦 TEST SUITE 5: Dependencies"
 echo "-----------------------------"
 
-# Upgrade pip
+# Detect network connectivity for package installation
+NETWORK_AVAILABLE=1
+curl -Is https://pypi.org --connect-timeout 5 >/dev/null 2>&1 || NETWORK_AVAILABLE=0
+
+# Upgrade pip if network is available
 print_test "Upgrading pip..."
-pip install --upgrade pip --quiet
-print_pass "Pip upgraded"
+if [ $NETWORK_AVAILABLE -eq 1 ]; then
+    pip install --upgrade pip --quiet
+    print_pass "Pip upgraded"
+else
+    print_warn "No network connection, skipping pip upgrade"
+fi
 
 # Install requirements
 if [ -f "requirements.txt" ]; then
     print_test "Installing requirements..."
-    pip install -r requirements.txt --quiet
-    if [ $? -eq 0 ]; then
-        print_pass "Requirements installed successfully"
+    if [ $NETWORK_AVAILABLE -eq 1 ]; then
+        pip install -r requirements.txt --quiet
+        if [ $? -eq 0 ]; then
+            print_pass "Requirements installed successfully"
+        else
+            print_fail "Some requirements failed to install"
+            echo "This might be due to missing build tools"
+        fi
     else
-        print_fail "Some requirements failed to install"
-        echo "This might be due to missing build tools"
+        print_warn "No network connection, skipping requirements installation"
     fi
 else
     print_fail "requirements.txt not found"
@@ -245,8 +257,7 @@ echo "------------------------------------"
 
 # Test main application
 print_test "Testing main application import..."
-python -c "import src.main" 2>/dev/null
-if [ $? -eq 0 ]; then
+if python -c "import src.main" >/dev/null 2>&1; then
     print_pass "Main application imports successfully"
 else
     print_fail "Main application import failed"
@@ -255,24 +266,21 @@ else
 fi
 
 print_test "Testing main application help..."
-python -m src.main --help >/dev/null 2>&1
-if [ $? -eq 0 ]; then
+if python -m src.main --help >/dev/null 2>&1; then
     print_pass "Main application help works"
 else
     print_fail "Main application help failed"
 fi
 
 print_test "Testing CLI import..."
-python -c "import src.cli" 2>/dev/null
-if [ $? -eq 0 ]; then
+if python -c "import src.cli" >/dev/null 2>&1; then
     print_pass "CLI imports successfully"
 else
     print_fail "CLI import failed"
 fi
 
 print_test "Testing CLI help..."
-python -m src.cli --help >/dev/null 2>&1
-if [ $? -eq 0 ]; then
+if python -m src.cli --help >/dev/null 2>&1; then
     print_pass "CLI help works"
 else
     print_fail "CLI help failed"
@@ -315,8 +323,7 @@ fi
 
 # Test configuration loading
 print_test "Testing configuration system..."
-python -c "from config.settings import get_settings; s = get_settings(); print('Config loaded')" 2>/dev/null
-if [ $? -eq 0 ]; then
+if python -c "from config.settings import get_settings; s = get_settings(); print('Config loaded')" >/dev/null 2>&1; then
     print_pass "Configuration system works"
 else
     print_fail "Configuration system failed"
@@ -326,8 +333,7 @@ fi
 
 # Test config commands
 print_test "Testing config show command..."
-python -m src.cli config show >/dev/null 2>&1
-if [ $? -eq 0 ]; then
+if python -m src.cli config show >/dev/null 2>&1; then
     print_pass "Config show command works"
 else
     print_warn "Config show command failed (might be due to missing DB config)"
@@ -345,8 +351,7 @@ echo "-------------------------------"
 mkdir -p logs
 
 print_test "Testing logging system..."
-python -c "from src.core.logging import get_main_logger; logger = get_main_logger(); logger.info('Test log message')" 2>/dev/null
-if [ $? -eq 0 ]; then
+if python -c "from src.core.logging import get_main_logger; logger = get_main_logger(); logger.info('Test log message')" >/dev/null 2>&1; then
     print_pass "Logging system works"
 else
     print_fail "Logging system failed"
@@ -354,8 +359,7 @@ fi
 
 # Test application init (creates logs)
 print_test "Testing application init..."
-python -m src.main init >/dev/null 2>&1
-if [ $? -eq 0 ]; then
+if python -m src.main init >/dev/null 2>&1; then
     print_pass "Application init works"
 else
     print_warn "Application init failed (might be due to missing config)"

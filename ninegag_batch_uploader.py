@@ -7,6 +7,12 @@ rendered results to configured channels.
 The code provides a minimal, demonstration-level
 implementation. Network and browser interactions may need
 additional error handling for production use.
+
+Google Chrome and ChromeDriver must be installed. If the driver is
+not on your ``PATH``, set the ``CHROMEDRIVER_PATH`` environment
+variable or pass ``--driver-path`` when running the script. When
+running without network access, ensure all Python dependencies are
+already installed.
 """
 
 from __future__ import annotations
@@ -251,7 +257,14 @@ def upload_to_channel(processed_videos: List[Path], channel_name: str) -> None:
 # CLI
 # ---------------------------------------------------------------------------
 def main() -> None:
-    parser = ArgumentParser(description="Batch upload 9GAG videos")
+    parser = ArgumentParser(
+        description="Batch upload 9GAG videos",
+        epilog=(
+            "ChromeDriver must be installed. If not in PATH, set "
+            "CHROMEDRIVER_PATH or use --driver-path. Dependencies must "
+            "already be installed when running offline."
+        ),
+    )
     parser.add_argument("--date", required=True, help="Date of posts YYYY-MM-DD")
     parser.add_argument("--template", required=True, help="Template name")
     parser.add_argument(

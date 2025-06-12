@@ -117,6 +117,7 @@ class VideoProcessor:
             result = subprocess.run(cmd, capture_output=True, text=True)
             if result.returncode == 0:
                 logger.info("Created templated video: %s", output_path.name)
+                logger.debug("Templated video saved at: %s", output_path)
                 logger.debug(
                     "Finished create_templated_video for %s -> %s",
                     video_data.post_id,

@@ -86,7 +86,8 @@ class NineGagVideoCreator:
                     logger.info("Video created successfully!")
             except Exception as exc:  # pragma: no cover - network/dependency
                 logger.error("Failed to process video: %s", exc)
-        self._save_results(results, category)
+        results_path = self._save_results(results, category)
+        logger.debug("Results JSON saved to: %s", results_path)
         if results:
             self._generate_summary_report(results, category)
         logger.info("Created %d videos successfully!", len(results))
@@ -121,7 +122,7 @@ class NineGagVideoCreator:
         logger.info("Summary report saved to: %s", summary_file)
 
     @log_method_calls
-    def _save_results(self, results: List[Dict], category: str) -> None:
+    def _save_results(self, results: List[Dict], category: str) -> Path:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         results_file = self.results_dir / f"{category}_{timestamp}.json"
         with open(results_file, "w", encoding="utf-8") as f:
@@ -138,6 +139,7 @@ class NineGagVideoCreator:
                 ensure_ascii=False,
             )
         logger.info("Results saved to: %s", results_file)
+        return results_file
 
     @log_method_calls
     def cleanup(self) -> None:

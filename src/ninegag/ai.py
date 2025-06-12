@@ -55,6 +55,11 @@ class AIContentGenerator:
         )
         try:
             response = await self._get_ai_response(prompt, temperature=0.9, max_tokens=30)
+            logger.debug(
+                "Title response %d chars: %s",
+                len(response),
+                response[:50].replace("\n", " "),
+            )
             return response.strip().strip('"').strip("'")
         except Exception as exc:  # pragma: no cover - external service
             logger.error("Title generation failed: %s", exc)
@@ -83,6 +88,11 @@ class AIContentGenerator:
         )
         try:
             response = await self._get_ai_response(prompt, temperature=0.95, max_tokens=30)
+            logger.debug(
+                "Hook response %d chars: %s",
+                len(response),
+                response[:50].replace("\n", " "),
+            )
             hook = response.strip().strip('"')
             if len(hook) > 60:
                 hook = hook[:57] + "..."
@@ -112,6 +122,11 @@ class AIContentGenerator:
         )
         try:
             response = await self._get_ai_response(prompt, temperature=0.9, max_tokens=25)
+            logger.debug(
+                "Subtitle response %d chars: %s",
+                len(response),
+                response[:50].replace("\n", " "),
+            )
             subtitle = response.strip().strip('"')
             if len(subtitle) > 40:
                 subtitle = subtitle[:37] + "..."
@@ -128,6 +143,11 @@ class AIContentGenerator:
         )
         try:
             response = await self._get_ai_response(prompt, temperature=0.8, max_tokens=80)
+            logger.debug(
+                "Description response %d chars: %s",
+                len(response),
+                response[:50].replace("\n", " "),
+            )
             return response.strip()
         except Exception as exc:  # pragma: no cover - external service
             logger.error("Description generation failed: %s", exc)
@@ -143,6 +163,11 @@ class AIContentGenerator:
         )
         try:
             response = await self._get_ai_response(prompt, temperature=0.7, max_tokens=100)
+            logger.debug(
+                "Hashtags response %d chars: %s",
+                len(response),
+                response[:50].replace("\n", " "),
+            )
             hashtags = [line.strip() for line in response.split("\n") if line.strip().startswith("#")]
             return hashtags[:count]
         except Exception as exc:  # pragma: no cover - external service
@@ -164,6 +189,11 @@ class AIContentGenerator:
         )
         try:
             response = await self._get_ai_response(prompt, temperature=0.3, max_tokens=150)
+            logger.debug(
+                "Analysis response %d chars: %s",
+                len(response),
+                response[:50].replace("\n", " "),
+            )
             return {
                 "analysis": response,
                 "top_tags": all_tags[:10],

@@ -121,13 +121,15 @@ class DummyDriver:
             for m in re.finditer(r'<div[^>]*data-post-id="([^"]+)"', self.html):
                 results.append(DummyElement({"data-post-id": m.group(1)}))
         elif selector == "div.post-container":
-            pattern = r'<div[^>]*class="[^\"]*post-container[^\"]*"[^>]*data-entry-id="([^"]+)"'
+            pattern = (r'<div[^>]*class="[^\\"]*post-container[^\\"]*"[^>]*(data-entry-id|data-post-id)="([^\\"]+)"')
             for m in re.finditer(pattern, self.html):
-                results.append(DummyElement({"data-entry-id": m.group(1)}))
+                attr = m.group(1)
+                results.append(DummyElement({attr: m.group(2)}))
         elif selector == "div[class*='post-item']":
-            pattern = r'<div[^>]*class="[^\"]*post-item[^\"]*"[^>]*data-entry-id="([^"]+)"'
+            pattern = (r'<div[^>]*class="[^\\"]*post-item[^\\"]*"[^>]*(data-entry-id|data-post-id)="([^\\"]+)"')
             for m in re.finditer(pattern, self.html):
-                results.append(DummyElement({"data-entry-id": m.group(1)}))
+                attr = m.group(1)
+                results.append(DummyElement({attr: m.group(2)}))
         return results
 
 
@@ -138,6 +140,8 @@ def test_extract_all_videos_detects_posts(monkeypatch):
         '<div data-entry-id="c3"></div>'
         '<article id="jsid-post-b2"></article>'
         '<div data-post-id="d4"></div>'
+        '<div class="post-container" data-entry-id="e5" data-post-id="e5"></div>'
+        '<div class="item post-item" data-entry-id="f6" data-post-id="f6"></div>'
     )
     driver = DummyDriver(html)
     crawler = crawler_mod.NineGagCrawler.__new__(crawler_mod.NineGagCrawler)
@@ -167,7 +171,7 @@ def test_extract_all_videos_detects_posts(monkeypatch):
 
     videos = crawler._extract_all_videos("hot")
     ids = [v.post_id for v in videos]
-    assert set(ids) == {"a1", "b2", "c3", "d4"}
+    assert set(ids) == {"a1", "b2", "c3", "d4", "e5", "f6"}
 
 
 def test_init_uses_given_driver_path(monkeypatch):

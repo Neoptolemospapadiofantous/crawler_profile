@@ -119,6 +119,7 @@ def test_apply_template_returns_output_path(tmp_path, monkeypatch):
 
 def test_upload_to_channel_uses_config(tmp_path, monkeypatch):
     import yaml
+    import types
 
     monkeypatch.chdir(tmp_path)
     channels = {
@@ -127,17 +128,34 @@ def test_upload_to_channel_uses_config(tmp_path, monkeypatch):
     with open("channels.yml", "w", encoding="utf-8") as f:
         yaml.safe_dump(channels, f)
 
-    events = []
+    actions = []
+
+    class DummyElement:
+        def __init__(self, name):
+            self.name = name
+
+        def send_keys(self, value):
+            actions.append(("send_keys", value))
+
+        def click(self):
+            actions.append(("click", self.name))
+
+        def clear(self):
+            actions.append(("clear", self.name))
 
     class DummyDriver:
         def __init__(self, options=None):
-            events.append("init")
+            actions.append(("init", None))
 
         def get(self, url):
-            events.append(url)
+            actions.append(("get", url))
+
+        def find_element(self, by, value):
+            actions.append(("find", value))
+            return DummyElement(value)
 
         def quit(self):
-            events.append("quit")
+            actions.append(("quit", None))
 
     class DummyOptions:
         def __init__(self):
@@ -146,8 +164,24 @@ def test_upload_to_channel_uses_config(tmp_path, monkeypatch):
         def add_argument(self, arg):
             self.args.append(arg)
 
+    class FakeWait:
+        def __init__(self, driver, timeout):
+            self.driver = driver
+
+        def until(self, condition):
+            return condition(self.driver)
+
+    FakeBy = types.SimpleNamespace(CSS_SELECTOR="css", NAME="name")
+    FakeEC = types.SimpleNamespace(
+        presence_of_element_located=lambda loc: lambda drv: drv.find_element(*loc),
+        element_to_be_clickable=lambda loc: lambda drv: drv.find_element(*loc),
+    )
+
     monkeypatch.setattr("ninegag_batch_uploader.webdriver.Chrome", DummyDriver)
     monkeypatch.setattr("ninegag_batch_uploader.Options", DummyOptions)
+    monkeypatch.setattr("ninegag_batch_uploader.WebDriverWait", FakeWait)
+    monkeypatch.setattr("ninegag_batch_uploader.By", FakeBy)
+    monkeypatch.setattr("ninegag_batch_uploader.EC", FakeEC)
 
     paths = [tmp_path / "a.mp4", tmp_path / "b.mp4"]
     for p in paths:
@@ -155,6 +189,8 @@ def test_upload_to_channel_uses_config(tmp_path, monkeypatch):
 
     upload_to_channel(paths, "MyChannel")
 
-    assert events[0] == "init"
-    assert events[-1] == "quit"
-    assert events.count("http://example.com") == len(paths)
+    send_keys_actions = [a for a in actions if a[0] == "send_keys"]
+    assert len(send_keys_actions) == len(paths)
+    assert ("click", "tp-yt-paper-radio-button[name='UNLISTED']") in actions
+    assert actions[0][0] == "init"
+    assert actions[-1][0] == "quit"

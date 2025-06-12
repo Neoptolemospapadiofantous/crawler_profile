@@ -3,6 +3,7 @@ import sys
 import types
 import importlib.util
 from pathlib import Path
+import pytest
 
 
 def load_crawler_module():
@@ -213,3 +214,34 @@ def test_init_uses_env_var(monkeypatch):
     crawler_mod.NineGagCrawler()
     assert recorded["path"] == "/env/path"
     assert called["count"] == 0
+
+
+def test_init_logs_error_on_download_failure(monkeypatch):
+    crawler_mod = load_crawler_module()
+    logged = {}
+
+    class Logger:
+        def error(self, msg, *args):
+            logged["msg"] = msg % args if args else msg
+
+        def info(self, *a, **k):
+            pass
+
+        def debug(self, *a, **k):
+            pass
+
+        def warning(self, *a, **k):
+            pass
+
+    monkeypatch.setattr(crawler_mod, "logger", Logger())
+
+    def fail_install(self):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(crawler_mod.ChromeDriverManager, "install", fail_install)
+    monkeypatch.delenv("CHROMEDRIVER_PATH", raising=False)
+
+    with pytest.raises(RuntimeError):
+        crawler_mod.NineGagCrawler()
+
+    assert "CHROMEDRIVER_PATH" in logged.get("msg", "")

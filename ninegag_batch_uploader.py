@@ -24,6 +24,11 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
+import sys
+
+# Ensure local modules can be imported when not installed
+ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / "src"))
 
 import requests
 import yaml

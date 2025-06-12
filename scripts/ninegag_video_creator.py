@@ -5,6 +5,11 @@ import asyncio
 import os
 from argparse import ArgumentParser
 from pathlib import Path
+import sys
+
+# Ensure modules can be imported when the package isn't installed
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
 
 from core.logging import get_logger_manager, get_logger
 from ninegag import NineGagVideoCreator

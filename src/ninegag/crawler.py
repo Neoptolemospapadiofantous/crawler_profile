@@ -89,7 +89,8 @@ class NineGagCrawler:
 
         chromedriver_path = driver_path
         if Path(driver_path).is_dir():
-            chromedriver_path = os.path.join(driver_path, "chromedriver.exe")
+            exe_name = "chromedriver.exe" if os.name == "nt" else "chromedriver"
+            chromedriver_path = os.path.join(driver_path, exe_name)
         service = Service(chromedriver_path)
 
         self.driver = webdriver.Chrome(service=service, options=chrome_options)

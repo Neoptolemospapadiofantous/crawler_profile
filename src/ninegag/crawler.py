@@ -2,24 +2,24 @@
 
 from __future__ import annotations
 
-from core.logging import get_logger, log_method_calls
 import os
 import re
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, List, Optional
 
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
-from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
-from pathlib import Path
 
+from core.logging import get_logger, log_method_calls
 
 logger = get_logger(__name__)
 
@@ -46,7 +46,9 @@ class NineGagCrawler:
     """Crawl 9GAG video posts using Selenium."""
 
     @log_method_calls
-    def __init__(self, headless: bool = True, driver_path: Optional[str] = None) -> None:
+    def __init__(
+        self, headless: bool = True, driver_path: Optional[str] = None
+    ) -> None:
         self.videos: List[VideoData] = []
         self.driver: Optional[webdriver.Chrome] = None
         self.headless = headless
@@ -127,9 +129,7 @@ class NineGagCrawler:
         for i in range(scroll_times):
             if list_view:
                 break
-            self.driver.execute_script(
-                "window.scrollTo(0, document.body.scrollHeight);"
-            )
+            self._scroll_from_parent()
             logger.debug("Scroll attempt %d searching for #list-view-2", i + 1)
             time.sleep(2)
             list_view = self.driver.find_elements(By.CSS_SELECTOR, "#list-view-2")
@@ -145,18 +145,45 @@ class NineGagCrawler:
         return videos
 
     @log_method_calls
+    def _scroll_from_parent(self) -> None:
+        """Scroll the parent list container or fall back to page scroll."""
+        try:
+            parent = self.driver.find_element(
+                By.CSS_SELECTOR,
+                "#list-view-2 .stream-container .list-container",
+            )
+            self.driver.execute_script(
+                "arguments[0].scrollTop = arguments[0].scrollHeight",
+                parent,
+            )
+        except Exception:
+            try:
+                self.driver.execute_script(
+                    "window.scrollTo(0, document.body.scrollHeight);"
+                )
+            except Exception:
+                pass
+
+    @log_method_calls
     def _extract_all_videos(self, category: str) -> List[VideoData]:
         videos: List[VideoData] = []
 
-        container_selector = "#list-view-2 .stream-container"
+        container_selector = "#list-view-2 .stream-container .list-container"
         containers = self.driver.find_elements(By.CSS_SELECTOR, container_selector)
+        if not containers:
+            container_selector = "#list-view-2 .stream-container"
+            containers = self.driver.find_elements(By.CSS_SELECTOR, container_selector)
         max_scrolls = 3
         attempt = 0
-        while not containers and attempt < max_scrolls and hasattr(self.driver, "execute_script"):
+        while (
+            not containers
+            and attempt < max_scrolls
+            and hasattr(self.driver, "execute_script")
+        ):
             attempt += 1
             logger.debug("Scrolling to find stream container (attempt %d)", attempt)
             try:
-                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                self._scroll_from_parent()
             except Exception:
                 break
             time.sleep(2)
@@ -199,9 +226,7 @@ class NineGagCrawler:
         while not list_view_found and attempts < 5:
             attempts += 1
             try:
-                self.driver.execute_script(
-                    "window.scrollTo(0, document.body.scrollHeight);"
-                )
+                self._scroll_from_parent()
                 logger.debug(
                     "Scrolling attempt %d while searching for #list-view-2",
                     attempts,
@@ -234,16 +259,12 @@ class NineGagCrawler:
             logger.warning("No articles found, retrying scroll")
             for _ in range(2):
                 try:
-                    self.driver.execute_script(
-                        "window.scrollTo(0, document.body.scrollHeight);"
-                    )
+                    self._scroll_from_parent()
                 except Exception:
                     break
                 time.sleep(2)
                 for sel in selectors:
-                    articles.extend(
-                        search_root.find_elements(By.CSS_SELECTOR, sel)
-                    )
+                    articles.extend(search_root.find_elements(By.CSS_SELECTOR, sel))
                 if articles:
                     break
 

@@ -1,8 +1,9 @@
+import importlib.util
 import re
 import sys
 import types
-import importlib.util
 from pathlib import Path
+
 import pytest
 
 
@@ -11,45 +12,59 @@ def load_crawler_module():
     # Stub selenium modules
     selenium = types.ModuleType("selenium")
     webdriver = types.ModuleType("selenium.webdriver")
+
     class DummyChrome:
         def __init__(self, *a, **k):
             self.service = k.get("service")
+
         def execute_script(self, script):
             pass
+
     webdriver.Chrome = DummyChrome
 
     chrome_options = types.ModuleType("selenium.webdriver.chrome.options")
+
     class Options:
         def __init__(self):
             pass
+
         def add_argument(self, arg):
             pass
+
         def add_experimental_option(self, name, value):
             pass
+
     chrome_options.Options = Options
 
     chrome_service = types.ModuleType("selenium.webdriver.chrome.service")
+
     class Service:
         def __init__(self, path):
             self.path = path
+
     chrome_service.Service = Service
 
     common = types.ModuleType("selenium.webdriver.common")
     by_mod = types.ModuleType("selenium.webdriver.common.by")
+
     class By:
         CSS_SELECTOR = "css"
         TAG_NAME = "tag"
         ID = "id"
+
     by_mod.By = By
     common.by = by_mod
 
     support = types.ModuleType("selenium.webdriver.support")
     ui = types.ModuleType("selenium.webdriver.support.ui")
+
     class DummyWait:
         def __init__(self, driver, timeout):
             self.driver = driver
+
         def until(self, method):
             return method(self.driver)
+
     ui.WebDriverWait = DummyWait
     ec = types.ModuleType("selenium.webdriver.support.expected_conditions")
     ec.presence_of_element_located = lambda locator: (lambda driver: True)
@@ -57,8 +72,10 @@ def load_crawler_module():
     support.expected_conditions = ec
 
     exceptions = types.ModuleType("selenium.common.exceptions")
+
     class TimeoutException(Exception):
         pass
+
     exceptions.TimeoutException = TimeoutException
 
     modules = {
@@ -79,9 +96,11 @@ def load_crawler_module():
     # Stub webdriver_manager
     wm = types.ModuleType("webdriver_manager")
     chrome_wm = types.ModuleType("webdriver_manager.chrome")
+
     class ChromeDriverManager:
         def install(self):
             return "/tmp/chromedriver"
+
     chrome_wm.ChromeDriverManager = ChromeDriverManager
     wm.chrome = chrome_wm
     sys.modules["webdriver_manager"] = wm
@@ -114,13 +133,41 @@ class DummyDriver:
     def __init__(self, html: str):
         self.html = html
         self.scrolled = 0
+
     def find_elements(self, by, selector):
         results = []
-        if selector == "#list-view-2 .stream-container":
-            m = re.search(r'<div[^>]*id="list-view-2"[^>]*>(.*?)</div>', self.html, re.DOTALL)
+        if selector == "#list-view-2 .stream-container .list-container":
+            m = re.search(
+                r'<div[^>]*id="list-view-2"[^>]*>(.*?)</div>', self.html, re.DOTALL
+            )
             if m:
                 inner = m.group(1)
-                m2 = re.search(r'<div[^>]*class="[^\"]*stream-container[^\"]*"[^>]*>(.*?)</div>', inner, re.DOTALL)
+                m2 = re.search(
+                    r'<div[^>]*class="[^\"]*stream-container[^\"]*"[^>]*>(.*?)</div>',
+                    inner,
+                    re.DOTALL,
+                )
+                if m2:
+                    inner = m2.group(1)
+                    m3 = re.search(
+                        r'<div[^>]*class="[^\"]*list-container[^\"]*"[^>]*>(.*?)</div>',
+                        inner,
+                        re.DOTALL,
+                    )
+                    if m3:
+                        results.append(DummyElement({}, m3.group(1)))
+            return results
+        if selector == "#list-view-2 .stream-container":
+            m = re.search(
+                r'<div[^>]*id="list-view-2"[^>]*>(.*?)</div>', self.html, re.DOTALL
+            )
+            if m:
+                inner = m.group(1)
+                m2 = re.search(
+                    r'<div[^>]*class="[^\"]*stream-container[^\"]*"[^>]*>(.*?)</div>',
+                    inner,
+                    re.DOTALL,
+                )
                 if m2:
                     results.append(DummyElement({}, m2.group(1)))
             return results
@@ -137,12 +184,12 @@ class DummyDriver:
             for m in re.finditer(r'<div[^>]*data-post-id="([^"]+)"', self.html):
                 results.append(DummyElement({"data-post-id": m.group(1)}))
         elif selector == "div.post-container":
-            pattern = (r'<div[^>]*class="[^\\"]*post-container[^\\"]*"[^>]*(data-entry-id|data-post-id)="([^\\"]+)"')
+            pattern = r'<div[^>]*class="[^\\"]*post-container[^\\"]*"[^>]*(data-entry-id|data-post-id)="([^\\"]+)"'
             for m in re.finditer(pattern, self.html):
                 attr = m.group(1)
                 results.append(DummyElement({attr: m.group(2)}))
         elif selector == "div[class*='post-item']":
-            pattern = (r'<div[^>]*class="[^\\"]*post-item[^\\"]*"[^>]*(data-entry-id|data-post-id)="([^\\"]+)"')
+            pattern = r'<div[^>]*class="[^\\"]*post-item[^\\"]*"[^>]*(data-entry-id|data-post-id)="([^\\"]+)"'
             for m in re.finditer(pattern, self.html):
                 attr = m.group(1)
                 results.append(DummyElement({attr: m.group(2)}))
@@ -155,14 +202,14 @@ class DummyDriver:
 def test_extract_all_videos_detects_posts(monkeypatch):
     crawler_mod = load_crawler_module()
     html = (
-        '<div id="list-view-2"><div class="stream-container">'
+        '<div id="list-view-2"><div class="stream-container"><div class="list-container">'
         '<article data-entry-id="a1"></article>'
         '<div data-entry-id="c3"></div>'
         '<article id="jsid-post-b2"></article>'
         '<div data-post-id="d4"></div>'
         '<div class="post-container" data-entry-id="e5" data-post-id="e5"></div>'
         '<div class="item post-item" data-entry-id="f6" data-post-id="f6"></div>'
-        '</div></div>'
+        "</div></div></div>"
     )
     driver = DummyDriver(html)
     crawler = crawler_mod.NineGagCrawler.__new__(crawler_mod.NineGagCrawler)
@@ -188,7 +235,9 @@ def test_extract_all_videos_detects_posts(monkeypatch):
             category=category,
         )
 
-    monkeypatch.setattr(crawler_mod.NineGagCrawler, "_extract_video_from_article", fake_extract)
+    monkeypatch.setattr(
+        crawler_mod.NineGagCrawler, "_extract_video_from_article", fake_extract
+    )
 
     videos = crawler._extract_all_videos("hot")
     ids = [v.post_id for v in videos]
@@ -208,10 +257,13 @@ def test_extract_all_videos_scrolls_when_container_missing(monkeypatch):
     class Logger:
         def debug(self, msg, *args):
             log_msgs.append(msg % args if args else msg)
+
         def info(self, *a, **k):
             pass
+
         def warning(self, *a, **k):
             pass
+
         def error(self, *a, **k):
             pass
 
@@ -229,9 +281,11 @@ def test_init_uses_given_driver_path(monkeypatch):
 
     def fake_chrome(*args, **kwargs):
         recorded["path"] = kwargs["service"].path
+
         class D:
             def execute_script(self, *a, **k):
                 pass
+
         return D()
 
     monkeypatch.setattr(crawler_mod.webdriver, "Chrome", fake_chrome)
@@ -251,9 +305,11 @@ def test_init_uses_env_var(monkeypatch):
 
     def fake_chrome(*args, **kwargs):
         recorded["path"] = kwargs["service"].path
+
         class D:
             def execute_script(self, *a, **k):
                 pass
+
         return D()
 
     monkeypatch.setattr(crawler_mod.ChromeDriverManager, "install", fake_install)
@@ -270,9 +326,11 @@ def test_init_with_directory_path(monkeypatch, tmp_path):
 
     def fake_chrome(*args, **kwargs):
         recorded["path"] = kwargs["service"].path
+
         class D:
             def execute_script(self, *a, **k):
                 pass
+
         return D()
 
     monkeypatch.setattr(crawler_mod.webdriver, "Chrome", fake_chrome)
@@ -292,9 +350,11 @@ def test_init_with_executable_path(monkeypatch, tmp_path):
 
     def fake_chrome(*args, **kwargs):
         recorded["path"] = kwargs["service"].path
+
         class D:
             def execute_script(self, *a, **k):
                 pass
+
         return D()
 
     monkeypatch.setattr(crawler_mod.webdriver, "Chrome", fake_chrome)
@@ -313,9 +373,11 @@ def test_env_var_directory(monkeypatch, tmp_path):
 
     def fake_chrome(*args, **kwargs):
         recorded["path"] = kwargs["service"].path
+
         class D:
             def execute_script(self, *a, **k):
                 pass
+
         return D()
 
     monkeypatch.setattr(crawler_mod.webdriver, "Chrome", fake_chrome)
@@ -336,9 +398,11 @@ def test_env_var_executable(monkeypatch, tmp_path):
 
     def fake_chrome(*args, **kwargs):
         recorded["path"] = kwargs["service"].path
+
         class D:
             def execute_script(self, *a, **k):
                 pass
+
         return D()
 
     monkeypatch.setattr(crawler_mod.webdriver, "Chrome", fake_chrome)

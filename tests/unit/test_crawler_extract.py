@@ -234,11 +234,7 @@ def test_init_with_directory_path(monkeypatch, tmp_path):
     dir_path.mkdir()
     crawler_mod.NineGagCrawler(driver_path=str(dir_path))
 
-    expected = (
-        str(dir_path / "chromedriver.exe")
-        if crawler_mod.os.name == "nt"
-        else str(dir_path)
-    )
+    expected = str(dir_path / "chromedriver.exe")
     assert recorded["path"] == expected
 
 
@@ -282,11 +278,7 @@ def test_env_var_directory(monkeypatch, tmp_path):
 
     crawler_mod.NineGagCrawler()
 
-    expected = (
-        str(dir_path / "chromedriver.exe")
-        if crawler_mod.os.name == "nt"
-        else str(dir_path)
-    )
+    expected = str(dir_path / "chromedriver.exe")
     assert recorded["path"] == expected
 
 

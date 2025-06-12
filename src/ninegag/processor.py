@@ -10,6 +10,11 @@ from typing import Optional
 import requests
 
 DEFAULT_REQUEST_TIMEOUT = 10
+DEFAULT_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/120.0.0.0 Safari/537.36"
+)
 
 from .crawler import VideoData
 
@@ -36,7 +41,10 @@ class VideoProcessor:
             return filepath
         try:
             response = requests.get(
-                video.mobile_url, stream=True, timeout=self.request_timeout
+                video.mobile_url,
+                stream=True,
+                timeout=self.request_timeout,
+                headers={"User-Agent": DEFAULT_USER_AGENT},
             )
             response.raise_for_status()
             with open(filepath, "wb") as f:

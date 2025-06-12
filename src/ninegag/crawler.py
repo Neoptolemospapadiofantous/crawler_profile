@@ -297,6 +297,13 @@ class NineGagCrawler:
                 pass
 
             stats = self._extract_stats(article)
+            logger.info(
+                "Video %s - title=%r likes=%s comments=%s",
+                post_id,
+                title,
+                stats["upvotes"],
+                stats["comments"],
+            )
 
             duration = None
             try:

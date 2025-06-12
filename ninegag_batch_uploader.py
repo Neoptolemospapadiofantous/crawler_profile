@@ -23,6 +23,9 @@ import requests
 import yaml
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 from core.logging import get_logger_manager, get_logger
 
@@ -182,7 +185,34 @@ def upload_to_channel(processed_videos: List[Path], channel_name: str) -> None:
         for video in processed_videos:
             logger.info("Uploading %s to %s", video.name, channel_name)
             driver.get(channel_cfg.get("upload_url", "about:blank"))
-            # Actual upload steps depend on the platform and are not implemented
+            try:
+                file_input = WebDriverWait(driver, 30).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='file']"))
+                )
+                file_input.send_keys(str(video))
+
+                title_field = WebDriverWait(driver, 30).until(
+                    EC.presence_of_element_located((By.NAME, "title"))
+                )
+                title_field.clear()
+                title_field.send_keys(video.stem)
+
+                unlisted = WebDriverWait(driver, 30).until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, "tp-yt-paper-radio-button[name='UNLISTED']"))
+                )
+                unlisted.click()
+
+                done_button = WebDriverWait(driver, 30).until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, "#done-button"))
+                )
+                done_button.click()
+
+                WebDriverWait(driver, 30).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "div[aria-label='Upload complete']"))
+                )
+                logger.info("Uploaded %s", video.name)
+            except Exception as exc:
+                logger.error("Failed uploading %s: %s", video.name, exc)
     finally:
         driver.quit()
         logger.info("Upload session finished for %s", channel_name)

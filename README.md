@@ -82,7 +82,8 @@ python scripts/ninegag_video_creator.py --category cats --count 5
 
 The script `ninegag_batch_uploader.py` downloads videos from 9GAG,
 applies a template with `ffmpeg` and then uploads the result using
-Selenium.
+Selenium. Generated videos are uploaded as **unlisted** on YouTube so
+they are not publicly visible by default.
 
 ### Populating `templates/`
 

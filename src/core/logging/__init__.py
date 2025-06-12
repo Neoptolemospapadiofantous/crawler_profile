@@ -7,7 +7,9 @@ import sys
 import logging
 import logging.config
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Callable, TypeVar
+from functools import wraps
+import inspect
 import yaml
 import structlog
 from structlog.stdlib import LoggerFactory
@@ -19,9 +21,39 @@ _loggers: Dict[str, logging.Logger] = {}
 _logger_manager: Optional['LoggerManager'] = None
 
 
+F = TypeVar("F", bound=Callable[..., Any])
+
+
+def log_method_calls(func: F) -> F:
+    """Decorator to log method entry, arguments and return value."""
+
+    if inspect.iscoroutinefunction(func):
+
+        @wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            logger = logging.getLogger(func.__module__)
+            logger.debug("Entering %s args=%s kwargs=%s", func.__qualname__, args, kwargs)
+            result = await func(*args, **kwargs)
+            logger.debug("Exiting %s -> %r", func.__qualname__, result)
+            return result
+
+        return async_wrapper  # type: ignore[return-value]
+
+    @wraps(func)
+    def sync_wrapper(*args, **kwargs):
+        logger = logging.getLogger(func.__module__)
+        logger.debug("Entering %s args=%s kwargs=%s", func.__qualname__, args, kwargs)
+        result = func(*args, **kwargs)
+        logger.debug("Exiting %s -> %r", func.__qualname__, result)
+        return result
+
+    return sync_wrapper  # type: ignore[return-value]
+
+
 class LoggerManager:
     """Manages application-wide logging configuration."""
-    
+
+    @log_method_calls
     def __init__(self, config_path: Optional[Path] = None):
         """
         Initialize logger manager.
@@ -33,6 +65,7 @@ class LoggerManager:
         self.config_path = config_path or Path("config/logging.yaml")
         self._initialized = False
         
+    @log_method_calls
     def initialize(self):
         """Initialize logging configuration."""
         if self._initialized:
@@ -52,6 +85,7 @@ class LoggerManager:
         
         self._initialized = True
         
+    @log_method_calls
     def _load_yaml_config(self):
         """Load logging configuration from YAML file."""
         try:
@@ -78,6 +112,7 @@ class LoggerManager:
             print(f"Failed to load logging config: {e}", file=sys.stderr)
             self._load_default_config()
             
+    @log_method_calls
     def _load_default_config(self):
         """Load default logging configuration."""
         config = {
@@ -116,6 +151,7 @@ class LoggerManager:
         
         logging.config.dictConfig(config)
         
+    @log_method_calls
     def _configure_structlog(self):
         """Configure structlog for structured logging."""
         processors = [
@@ -140,6 +176,7 @@ class LoggerManager:
             cache_logger_on_first_use=True,
         )
         
+    @log_method_calls
     def get_logger(self, name: str) -> logging.Logger:
         """
         Get a logger instance.
@@ -197,4 +234,5 @@ __all__ = [
     'get_logger_manager',
     'get_logger',
     'get_main_logger',
-]                                                                               
+    'log_method_calls',
+]

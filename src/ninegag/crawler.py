@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from core.logging import get_logger
+from core.logging import get_logger, log_method_calls
 import os
 import re
 import time
@@ -45,6 +45,7 @@ class VideoData:
 class NineGagCrawler:
     """Crawl 9GAG video posts using Selenium."""
 
+    @log_method_calls
     def __init__(self, headless: bool = True, driver_path: Optional[str] = None) -> None:
         self.videos: List[VideoData] = []
         self.driver: Optional[webdriver.Chrome] = None
@@ -52,6 +53,7 @@ class NineGagCrawler:
         self.driver_path = driver_path
         self.setup_driver()
 
+    @log_method_calls
     def setup_driver(self) -> None:
         """Initialize the Chrome driver."""
         chrome_options = Options()
@@ -94,6 +96,7 @@ class NineGagCrawler:
         )
         logger.info("Chrome driver initialized successfully")
 
+    @log_method_calls
     def crawl_category(self, category: str, scroll_times: int = 3) -> List[VideoData]:
         """Return a list of videos from a 9GAG category."""
 
@@ -132,6 +135,7 @@ class NineGagCrawler:
         )
         return videos
 
+    @log_method_calls
     def _extract_all_videos(self, category: str) -> List[VideoData]:
         videos: List[VideoData] = []
         selectors = [
@@ -199,6 +203,7 @@ class NineGagCrawler:
         logger.info("Found %d videos", len(videos))
         return videos
 
+    @log_method_calls
     def _extract_video_from_article(
         self, article, category: str
     ) -> Optional[VideoData]:
@@ -339,6 +344,7 @@ class NineGagCrawler:
             logger.error("Error extracting video data: %s", exc)
             return None
 
+    @log_method_calls
     def _extract_stats(self, article) -> Dict[str, int]:
         stats = {"upvotes": 0, "comments": 0}
         try:
@@ -387,6 +393,7 @@ class NineGagCrawler:
 
         return stats
 
+    @log_method_calls
     def _parse_number(self, text: str) -> int:
         if not text or not isinstance(text, str):
             return 0
@@ -409,6 +416,7 @@ class NineGagCrawler:
         except (ValueError, AttributeError):
             return 0
 
+    @log_method_calls
     def _parse_date(self, date_str: str) -> Optional[datetime]:
         """Parse a date string into a datetime object if possible."""
         if not date_str:
@@ -424,6 +432,7 @@ class NineGagCrawler:
                     continue
         return None
 
+    @log_method_calls
     def close(self) -> None:
         if self.driver:
             self.driver.quit()

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from core.logging import get_logger
+from core.logging import get_logger, log_method_calls
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List
@@ -19,6 +19,7 @@ logger = get_logger(__name__)
 class NineGagVideoCreator:
     """Combine crawling, AI generation and processing."""
 
+    @log_method_calls
     def __init__(self, openai_key: str) -> None:
         self._create_directories()
         self.crawler = NineGagCrawler(headless=True)
@@ -26,6 +27,7 @@ class NineGagVideoCreator:
         self.processor = VideoProcessor()
         self.results_dir = Path("./results")
 
+    @log_method_calls
     def _create_directories(self) -> None:
         for dir_path in [
             "output",
@@ -38,6 +40,7 @@ class NineGagVideoCreator:
             Path(dir_path).mkdir(parents=True, exist_ok=True)
         logger.info("All directories created")
 
+    @log_method_calls
     async def create_daily_content(self, category: str, count: int = 10) -> List[Dict]:
         logger.info("Creating content for: %s", category)
         videos = self.crawler.crawl_category(category, scroll_times=5)
@@ -89,6 +92,7 @@ class NineGagVideoCreator:
         logger.info("Created %d videos successfully!", len(results))
         return results
 
+    @log_method_calls
     def _generate_summary_report(self, results: List[Dict], category: str) -> None:
         summary_dir = Path("./summaries")
         summary_dir.mkdir(exist_ok=True)
@@ -116,6 +120,7 @@ class NineGagVideoCreator:
                 f.write(f"   Source: {result['source_url']}\n")
         logger.info("Summary report saved to: %s", summary_file)
 
+    @log_method_calls
     def _save_results(self, results: List[Dict], category: str) -> None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         results_file = self.results_dir / f"{category}_{timestamp}.json"
@@ -134,6 +139,7 @@ class NineGagVideoCreator:
             )
         logger.info("Results saved to: %s", results_file)
 
+    @log_method_calls
     def cleanup(self) -> None:
         self.crawler.close()
 

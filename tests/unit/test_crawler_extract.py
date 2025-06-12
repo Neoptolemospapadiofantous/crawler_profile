@@ -114,6 +114,20 @@ class DummyDriver:
         elif selector.startswith('article[id^="jsid-post-"]'):
             for m in re.finditer(r'<article[^>]*id="(jsid-post-[^"]+)"', self.html):
                 results.append(DummyElement({"id": m.group(1)}))
+        elif selector == "div[data-entry-id]":
+            for m in re.finditer(r'<div[^>]*data-entry-id="([^"]+)"', self.html):
+                results.append(DummyElement({"data-entry-id": m.group(1)}))
+        elif selector == "div[data-post-id]":
+            for m in re.finditer(r'<div[^>]*data-post-id="([^"]+)"', self.html):
+                results.append(DummyElement({"data-post-id": m.group(1)}))
+        elif selector == "div.post-container":
+            pattern = r'<div[^>]*class="[^\"]*post-container[^\"]*"[^>]*data-entry-id="([^"]+)"'
+            for m in re.finditer(pattern, self.html):
+                results.append(DummyElement({"data-entry-id": m.group(1)}))
+        elif selector == "div[class*='post-item']":
+            pattern = r'<div[^>]*class="[^\"]*post-item[^\"]*"[^>]*data-entry-id="([^"]+)"'
+            for m in re.finditer(pattern, self.html):
+                results.append(DummyElement({"data-entry-id": m.group(1)}))
         return results
 
 
@@ -121,7 +135,9 @@ def test_extract_all_videos_detects_posts(monkeypatch):
     crawler_mod = load_crawler_module()
     html = (
         '<article data-entry-id="a1"></article>'
+        '<div data-entry-id="c3"></div>'
         '<article id="jsid-post-b2"></article>'
+        '<div data-post-id="d4"></div>'
     )
     driver = DummyDriver(html)
     crawler = crawler_mod.NineGagCrawler.__new__(crawler_mod.NineGagCrawler)
@@ -130,6 +146,7 @@ def test_extract_all_videos_detects_posts(monkeypatch):
     def fake_extract(self, article, category):
         pid = (
             article.get_attribute("data-entry-id")
+            or article.get_attribute("data-post-id")
             or article.get_attribute("id")
             or ""
         )
@@ -150,7 +167,7 @@ def test_extract_all_videos_detects_posts(monkeypatch):
 
     videos = crawler._extract_all_videos("hot")
     ids = [v.post_id for v in videos]
-    assert ids == ["a1", "b2"]
+    assert set(ids) == {"a1", "b2", "c3", "d4"}
 
 
 def test_init_uses_given_driver_path(monkeypatch):

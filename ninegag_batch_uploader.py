@@ -21,11 +21,20 @@ from typing import Dict, List, Optional
 
 import requests
 import yaml
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from types import SimpleNamespace
+
+try:
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+except Exception:  # pragma: no cover - optional dependency
+    webdriver = SimpleNamespace(Chrome=None)
+    Options = SimpleNamespace()
+    By = SimpleNamespace()
+    WebDriverWait = SimpleNamespace()
+    EC = SimpleNamespace()
 
 from core.logging import get_logger_manager, get_logger
 
@@ -62,6 +71,26 @@ def _load_registry() -> Dict[str, Dict[str, object]]:
 def _save_registry(registry: Dict[str, Dict[str, object]]) -> None:
     with open(REGISTRY_PATH, "w", encoding="utf-8") as f:
         json.dump(registry, f, indent=2)
+
+
+def _ensure_selenium() -> None:
+    """Import Selenium modules if they weren't imported successfully."""
+    global webdriver, Options, By, WebDriverWait, EC
+    if not hasattr(webdriver, "Chrome"):
+        try:
+            from selenium import webdriver as _webdriver
+            from selenium.webdriver.chrome.options import Options as _Options
+            from selenium.webdriver.common.by import By as _By
+            from selenium.webdriver.support.ui import WebDriverWait as _WebDriverWait
+            from selenium.webdriver.support import expected_conditions as _EC
+        except Exception as exc:  # pragma: no cover - optional dependency
+            logger.error("Selenium import failed: %s", exc)
+            raise ImportError("Selenium required for uploading") from exc
+        webdriver = _webdriver
+        Options = _Options
+        By = _By
+        WebDriverWait = _WebDriverWait
+        EC = _EC
 
 
 # ---------------------------------------------------------------------------
@@ -166,6 +195,7 @@ def apply_template(video_path: Path, template_name: str) -> Path:
 
 def upload_to_channel(processed_videos: List[Path], channel_name: str) -> None:
     """Upload processed videos using a Selenium profile."""
+    _ensure_selenium()
     config_path = Path("channels.yml")
     if not config_path.exists():
         logger.error("channels.yml not found")
@@ -195,7 +225,6 @@ def upload_to_channel(processed_videos: List[Path], channel_name: str) -> None:
                     EC.presence_of_element_located((By.NAME, "title"))
                 )
                 title_field.clear()
-                title_field.send_keys(video.stem)
 
                 unlisted = WebDriverWait(driver, 30).until(
                     EC.element_to_be_clickable((By.CSS_SELECTOR, "tp-yt-paper-radio-button[name='UNLISTED']"))

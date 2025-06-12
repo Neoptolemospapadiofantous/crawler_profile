@@ -3,7 +3,7 @@ import types
 
 sys.modules.setdefault("openai", types.ModuleType("openai"))
 
-from ninegag.processor import VideoProcessor
+from ninegag.processor import VideoProcessor, DEFAULT_USER_AGENT
 from ninegag.crawler import VideoData
 
 
@@ -18,7 +18,7 @@ class DummyResp:
 def test_download_video_passes_timeout(tmp_path, monkeypatch):
     recorded = {}
 
-    def fake_get(url, stream=True, timeout=None):
+    def fake_get(url, stream=True, timeout=None, headers=None):
         recorded["timeout"] = timeout
         return DummyResp()
 
@@ -41,4 +41,33 @@ def test_download_video_passes_timeout(tmp_path, monkeypatch):
     path = proc.download_video(video)
 
     assert recorded["timeout"] == 12
+    assert path is not None and path.exists()
+
+
+def test_download_video_sets_user_agent(tmp_path, monkeypatch):
+    recorded = {}
+
+    def fake_get(url, stream=True, timeout=None, headers=None):
+        recorded["headers"] = headers
+        return DummyResp()
+
+    monkeypatch.setattr("ninegag.processor.requests.get", fake_get)
+
+    video = VideoData(
+        post_id="abc",
+        title="t",
+        video_url="http://example.com/video.mp4",
+        mobile_url="http://example.com/video.mp4",
+        thumbnail_url="",
+        author="a",
+        tags=[],
+        stats={},
+        category="test",
+    )
+
+    proc = VideoProcessor()
+    proc.output_dir = tmp_path
+    path = proc.download_video(video)
+
+    assert recorded["headers"] == {"User-Agent": DEFAULT_USER_AGENT}
     assert path is not None and path.exists()
